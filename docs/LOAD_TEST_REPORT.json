@@ -1,0 +1,48 @@
+{
+  "runId": "158ac8aa-312c-4027-b6c5-518df80cf0d1",
+  "occurredAt": "2026-11-25T04:24:31.166Z",
+  "environment": {
+    "bun": "1.3.3",
+    "platform": "linux",
+    "arch": "x64",
+    "availableParallelism": 9,
+    "applicationInstances": 3,
+    "note": "PostgreSQL 17.12 and LocalStack Core 4.14.0 native services; three Bun processes; application database role jungle_app; publisher polling 250ms; executor resource limits not calibrated"
+  },
+  "methodology": {
+    "requests": 1000,
+    "concurrency": 25,
+    "wallets": 20,
+    "duplicateRule": "every fifth request replays the preceding identity",
+    "warmup": "wallet creation and metrics fetch excluded",
+    "measurement": "HTTP submission only; reconciliation after the measured interval",
+    "money": "1.00 BRL per unique BET, 1000000.00 BRL initial balance per wallet"
+  },
+  "results": {
+    "durationMs": 1433.714684,
+    "requestsPerSecond": 697.4888456956056,
+    "uniqueProcessed": 800,
+    "replays": 200,
+    "failures": 0,
+    "errorRate": 0,
+    "httpStatuses": {
+      "200": 1000
+    },
+    "latencyMs": {
+      "p50": 26.646246999999903,
+      "p95": 95.78739299999995,
+      "p99": 131.71156800000006
+    },
+    "lockConflicts": 0,
+    "retries": 0,
+    "peakObservedOutboxLagSeconds": 1.24742,
+    "outboxPendingAtMeasurementEnd": 1492,
+    "reconciledWallets": 20,
+    "allWalletsConsistent": true
+  },
+  "limitations": [
+    "Short local measurement; not a production capacity estimate.",
+    "Outbox publication is asynchronous; HTTP throughput is not event-consumer throughput.",
+    "A single run provides no statistical confidence interval."
+  ]
+}

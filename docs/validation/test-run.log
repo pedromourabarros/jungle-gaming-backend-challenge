@@ -1,0 +1,563 @@
+PostgreSQL ready: PostgreSQL 17.12 (Debian 17.12-0+deb13u1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+LocalStack ready: version=4.14.0 sqs=running
+$ bun run typecheck && bun run test:unit && bun run test:integration && bun run test:concurrency
+$ tsc --noEmit
+$ bun test test/unit test/messaging/consumer.test.ts
+bun test v1.3.3 (274e01c7)
+
+test/messaging/consumer.test.ts:
+(pass) SQS transport failure contracts > validates the envelope and preserves the supplied idempotency key [1.12ms]
+(pass) SQS transport failure contracts > rejects malformed JSON, absent keys, invalid dates, OPENING and numeric money [0.60ms]
+{"timestamp":"2026-11-25T04:24:06.348Z","level":"info","event":"consumer.acknowledged","correlationId":"provider-message-1","messageId":"provider-message-1","walletId":"02126cd0-8497-4c51-8210-3199b7a4c3c4","providerId":"provider-a","transactionId":"c92f6be6-e326-4e59-aea3-ef8cc93c2d20","status":"PROCESSED"}
+(pass) SQS transport failure contracts > acknowledges only after the committed use case and the test hook [4.60ms]
+{"timestamp":"2026-11-25T04:24:06.349Z","level":"info","event":"consumer.acknowledged","correlationId":"provider-message-1","messageId":"provider-message-1","walletId":"02126cd0-8497-4c51-8210-3199b7a4c3c4","providerId":"provider-a","transactionId":"c92f6be6-e326-4e59-aea3-ef8cc93c2d20","status":"REJECTED"}
+(pass) SQS transport failure contracts > acknowledges a persisted business rejection without sending it to DLQ [0.57ms]
+{"timestamp":"2026-11-25T04:24:06.349Z","level":"warn","event":"consumer.retry_scheduled","code":"DLQ_OR_AUDIT_UNAVAILABLE","attempts":1}
+(pass) SQS transport failure contracts > never ACKs malformed input if its DLQ transfer fails [0.61ms]
+{"timestamp":"2026-11-25T04:24:06.350Z","level":"warn","event":"consumer.dead_lettered","code":"INVALID_MESSAGE_ENVELOPE","attempts":1}
+(pass) SQS transport failure contracts > transfers malformed input before acknowledging it [0.26ms]
+{"timestamp":"2026-11-25T04:24:06.350Z","level":"warn","event":"consumer.retry_scheduled","correlationId":"provider-message-1","messageId":"provider-message-1","walletId":"02126cd0-8497-4c51-8210-3199b7a4c3c4","providerId":"provider-a","code":"DATABASE_UNAVAILABLE","attempts":2}
+(pass) SQS transport failure contracts > transient failure retries without acknowledgement or terminal audit [0.35ms]
+{"timestamp":"2026-11-25T04:24:06.350Z","level":"warn","event":"consumer.dead_lettered","correlationId":"provider-message-1","messageId":"provider-message-1","walletId":"02126cd0-8497-4c51-8210-3199b7a4c3c4","providerId":"provider-a","code":"PROCESSING_RETRY_EXHAUSTED","attempts":5}
+(pass) SQS transport failure contracts > exhausted identifiable failures persist an audit before DLQ and ACK [0.41ms]
+{"timestamp":"2026-11-25T04:24:06.351Z","level":"warn","event":"consumer.retry_scheduled","correlationId":"provider-message-1","messageId":"provider-message-1","walletId":"02126cd0-8497-4c51-8210-3199b7a4c3c4","providerId":"provider-a","code":"DLQ_OR_AUDIT_UNAVAILABLE","attempts":5}
+(pass) SQS transport failure contracts > does not ACK when the terminal audit cannot commit [0.35ms]
+{"timestamp":"2026-11-25T04:24:06.351Z","level":"warn","event":"consumer.dead_lettered","correlationId":"provider-message-1","messageId":"provider-message-1","walletId":"02126cd0-8497-4c51-8210-3199b7a4c3c4","providerId":"provider-a","code":"INBOX_CONFLICT","attempts":1}
+(pass) SQS transport failure contracts > a conflicting command is quarantined without creating another transaction [0.35ms]
+{"timestamp":"2026-11-25T04:24:08.380Z","level":"info","event":"consumer.acknowledged","correlationId":"provider-message-1","messageId":"provider-message-1","walletId":"02126cd0-8497-4c51-8210-3199b7a4c3c4","providerId":"provider-a","transactionId":"c92f6be6-e326-4e59-aea3-ef8cc93c2d20","status":"PROCESSED"}
+(pass) SQS transport failure contracts > extends visibility while a financial transaction is still running [2030.01ms]
+(pass) SQS transport failure contracts > backoff increases exponentially and is bounded [0.28ms]
+{"timestamp":"2026-11-25T04:24:10.416Z","level":"warn","event":"consumer.retry_scheduled","correlationId":"provider-message-1","messageId":"provider-message-1","walletId":"02126cd0-8497-4c51-8210-3199b7a4c3c4","providerId":"provider-a","code":"DATABASE_UNAVAILABLE","attempts":1}
+(pass) SQS transport failure contracts > finishes an in-flight heartbeat before applying retry visibility [2034.96ms]
+(pass) SQS transport failure contracts > shutdown releases visibility after the heartbeat and prevents late processing from overriding it [2038.35ms]
+
+test/unit/wager-transaction.test.ts:
+(pass) WagerTransaction creation and financial directions > a provider operation begins pending and retains exact business identity [0.63ms]
+(pass) WagerTransaction creation and financial directions > REFUND requires an external provider reference [0.15ms]
+(pass) WagerTransaction creation and financial directions > ROLLBACK requires an external provider reference [0.05ms]
+(pass) WagerTransaction creation and financial directions > BET cannot provide a reference; OPENING is internal only [0.20ms]
+(pass) WagerTransaction creation and financial directions > WIN may be independent, or carry a reference that must be resolved [0.13ms]
+(pass) WagerTransaction creation and financial directions > LOSS accepts non-negative informational amounts and never has a ledger direction [0.19ms]
+(pass) WagerTransaction creation and financial directions > BET requires a positive amount [0.18ms]
+(pass) WagerTransaction creation and financial directions > WIN requires a positive amount [0.02ms]
+(pass) WagerTransaction creation and financial directions > REFUND requires a positive amount [0.02ms]
+(pass) WagerTransaction creation and financial directions > ROLLBACK requires a positive amount [0.04ms]
+(pass) WagerTransaction creation and financial directions > BET debits, REFUND credits, and ROLLBACK inverts each permitted target [0.17ms]
+(pass) WagerTransaction creation and financial directions > unknown kinds and empty identities are rejected by the domain factory [0.15ms]
+(pass) Reference rules > a full refund of a processed matching BET is valid [0.05ms]
+(pass) Reference rules > rejects reference mismatch in providerId [0.05ms]
+(pass) Reference rules > rejects reference mismatch in playerId [0.03ms]
+(pass) Reference rules > rejects reference mismatch in walletId [0.03ms]
+(pass) Reference rules > rejects reference mismatch in roundId
+(pass) Reference rules > rejects reference mismatch in externalTransactionId
+(pass) Reference rules > rejects a self-reference [0.08ms]
+(pass) Reference rules > rejects cross-currency and partial reversal references [0.06ms]
+(pass) Reference rules > a reference in PENDING is not reversible [0.06ms]
+(pass) Reference rules > a reference in PENDING_REFERENCE is not reversible [0.01ms]
+(pass) Reference rules > a reference in REJECTED is not reversible
+(pass) Reference rules > a reference in FAILED is not reversible [0.02ms]
+(pass) Reference rules > REFUND only accepts BET; ROLLBACK accepts BET, WIN and REFUND [0.16ms]
+(pass) Reference rules > WIN may differ from the BET amount; it still requires a processed BET when linked [0.06ms]
+(pass) Persisted state machine and immutable terminal outcomes > out-of-order reference becomes pending, can retry, then becomes processed [0.14ms]
+(pass) Persisted state machine and immutable terminal outcomes > pending reference exhaustion remains an audited terminal rejection [0.05ms]
+(pass) Persisted state machine and immutable terminal outcomes > currency rejection preserves the actual wallet balance currency [0.04ms]
+(pass) Persisted state machine and immutable terminal outcomes > PROCESSED forbids all transitions, including reapplying the same outcome [0.16ms]
+(pass) Persisted state machine and immutable terminal outcomes > REJECTED forbids all transitions, including reapplying the same outcome [0.06ms]
+(pass) Persisted state machine and immutable terminal outcomes > FAILED forbids all transitions, including reapplying the same outcome [0.03ms]
+(pass) Persisted state machine and immutable terminal outcomes > permanent failure has a stable code, decision timestamp and observed balance [0.03ms]
+(pass) Persisted state machine and immutable terminal outcomes > invalid transition arguments do not alter pending state [0.08ms]
+(pass) Persisted state machine and immutable terminal outcomes > rehydration preserves a historical terminal result without replaying transitions [0.07ms]
+
+test/unit/messages-events.test.ts:
+(pass) Typed integration events > each concrete event owns its stable eventType and version [0.37ms]
+(pass) Typed integration events > serialized envelopes contain identity, tracing, ISO time and decimal strings [0.10ms]
+(pass) Typed integration events > caller data, nested arrays and dates cannot mutate a confirmed event [0.13ms]
+(pass) Typed integration events > optional tracing and data fields follow stable JSON omission semantics [0.06ms]
+(pass) Typed integration events > rejects non-JSON data rather than losing or changing it during serialization [0.09ms]
+(pass) Typed integration events > rejects non-JSON data rather than losing or changing it during serialization [0.02ms]
+(pass) Typed integration events > rejects non-JSON data rather than losing or changing it during serialization [0.01ms]
+(pass) Typed integration events > rejects non-JSON data rather than losing or changing it during serialization
+(pass) Typed integration events > rejects non-JSON data rather than losing or changing it during serialization
+(pass) Typed integration events > rejects non-JSON data rather than losing or changing it during serialization
+(pass) Typed integration events > rejects non-JSON data rather than losing or changing it during serialization
+(pass) Typed integration events > rejects circular data [0.02ms]
+(pass) Typed integration events > __proto__ is preserved as a data key without changing object prototypes [0.03ms]
+(pass) Typed integration events > invalid timestamps and empty identities are rejected [0.05ms]
+(pass) Durable inbox state > new receipt is unprocessed and exposes a business-payload hash comparison [0.07ms]
+(pass) Durable inbox state > processing is terminal and rehydration preserves the original decision time [0.10ms]
+(pass) Durable inbox state > malformed identity cannot become an inbox receipt [0.02ms]
+(pass) Outbox durable delivery lifecycle > enqueue preserves eventId and the complete immutable envelope [0.10ms]
+(pass) Outbox durable delivery lifecycle > exponential retries persist across rehydration and cap at five minutes [0.36ms]
+(pass) Outbox durable delivery lifecycle > published events cannot retry or be republished by a state transition [0.10ms]
+(pass) Outbox durable delivery lifecycle > rehydrated payload and timestamps cannot mutate persisted facts through aliases [0.04ms]
+
+test/unit/contracts.test.ts:
+(pass) Canonical business-payload hashing and idempotency identity > object-key order, including nested money keys, cannot change business identity [0.70ms]
+(pass) Canonical business-payload hashing and idempotency identity > canonical JSON sorts object keys recursively and retains array order [0.20ms]
+(pass) Canonical business-payload hashing and idempotency identity > header key is the source of truth and stays outside the payload hash [0.12ms]
+(pass) Canonical business-payload hashing and idempotency identity > changing a business field changes the hash for conflict detection: {"providerId":"provider-b"} [0.13ms]
+(pass) Canonical business-payload hashing and idempotency identity > changing a business field changes the hash for conflict detection: {"externalTransactionId":"operation-124"} [0.13ms]
+(pass) Canonical business-payload hashing and idempotency identity > changing a business field changes the hash for conflict detection: {"playerId":"0192f28f-5dc0-7d58-bdb2-814ad6a0f4a2"} [0.07ms]
+(pass) Canonical business-payload hashing and idempotency identity > changing a business field changes the hash for conflict detection: {"walletId":"0192f291-27dd-7d3f-8071-5f8685deef38"} [0.03ms]
+(pass) Canonical business-payload hashing and idempotency identity > changing a business field changes the hash for conflict detection: {"roundId":"round-988"} [0.06ms]
+(pass) Canonical business-payload hashing and idempotency identity > changing a business field changes the hash for conflict detection: {"gameId":"another-game"} [0.04ms]
+(pass) Canonical business-payload hashing and idempotency identity > changing a business field changes the hash for conflict detection: {"kind":"WIN"} [0.06ms]
+(pass) Canonical business-payload hashing and idempotency identity > changing a business field changes the hash for conflict detection: {"money":{"amount":"25.01","currency":"BRL"}} [0.05ms]
+(pass) Canonical business-payload hashing and idempotency identity > changing a business field changes the hash for conflict detection: {"money":{"amount":"25.00","currency":"USD"}} [0.04ms]
+(pass) Canonical business-payload hashing and idempotency identity > changing a business field changes the hash for conflict detection: {"referenceExternalTransactionId":"original-operation"} [0.13ms]
+(pass) Canonical business-payload hashing and idempotency identity > canonical UUID normalization does not create false payload conflicts [0.17ms]
+(pass) Canonical business-payload hashing and idempotency identity > transport context is not part of the accepted business contract [0.15ms]
+(pass) HTTP and SQS shared submission input validation > rejects invalid/missing idempotency key "" [0.04ms]
+(pass) HTTP and SQS shared submission input validation > rejects invalid/missing idempotency key " " [0.06ms]
+(pass) HTTP and SQS shared submission input validation > rejects invalid/missing idempotency key "two words" [0.01ms]
+(pass) HTTP and SQS shared submission input validation > rejects invalid/missing idempotency key "line\nbreak" [0.02ms]
+(pass) HTTP and SQS shared submission input validation > rejects invalid/missing idempotency key "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" [0.02ms]
+(pass) HTTP and SQS shared submission input validation > a parsed input preserves public kind and decimal MoneyProps [0.09ms]
+(pass) HTTP and SQS shared submission input validation > rejects malformed fields instead of silently coercing them: {"kind":"OPENING"} [0.10ms]
+(pass) HTTP and SQS shared submission input validation > rejects malformed fields instead of silently coercing them: {"kind":"UNKNOWN"} [0.05ms]
+(pass) HTTP and SQS shared submission input validation > rejects malformed fields instead of silently coercing them: {"providerId":"__system__"} [0.01ms]
+(pass) HTTP and SQS shared submission input validation > rejects malformed fields instead of silently coercing them: {"providerId":""} [0.05ms]
+(pass) HTTP and SQS shared submission input validation > rejects malformed fields instead of silently coercing them: {"walletId":"not-a-uuid"} [0.04ms]
+(pass) HTTP and SQS shared submission input validation > rejects malformed fields instead of silently coercing them: {"playerId":""} [0.02ms]
+(pass) HTTP and SQS shared submission input validation > rejects malformed fields instead of silently coercing them: {"extra":"unaccepted"} [0.02ms]
+(pass) HTTP and SQS shared submission input validation > rejects malformed fields instead of silently coercing them: {"money":{"amount":25,"currency":"BRL"}} [0.04ms]
+(pass) HTTP and SQS shared submission input validation > rejects malformed fields instead of silently coercing them: {"money":{"amount":"25.000","currency":"BRL"}} [0.03ms]
+(pass) HTTP and SQS shared submission input validation > rejects malformed fields instead of silently coercing them: {"money":{"amount":"25.00","currency":"JPY"}} [0.02ms]
+(pass) HTTP and SQS shared submission input validation > rejects malformed fields instead of silently coercing them: {"money":{"amount":"25.00","currency":"BRL","precision":2}} [0.01ms]
+(pass) HTTP and SQS shared submission input validation > wallet contracts use the same exact Money representation [0.22ms]
+
+test/unit/money.test.ts:
+(pass) Money: exact fixed-scale decimal contract > round-trips supported currency BRL [0.05ms]
+(pass) Money: exact fixed-scale decimal contract > round-trips supported currency USD
+(pass) Money: exact fixed-scale decimal contract > round-trips supported currency EUR
+(pass) Money: exact fixed-scale decimal contract > round-trips supported currency GBP
+(pass) Money: exact fixed-scale decimal contract > 0.10 + 0.20 is exactly 0.30, without binary floating-point rounding [0.10ms]
+(pass) Money: exact fixed-scale decimal contract > amounts beyond Number.MAX_SAFE_INTEGER retain every cent [0.02ms]
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "" instead of rounding/coercing [0.05ms]
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount " " instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "1" instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "1.0" instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "1." instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount ".00" instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount ".50" instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "01.00" instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "00.00" instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "-1.00" instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "-0.00" instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "+1.00" instead of rounding/coercing [0.03ms]
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "1e3" instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "1E+3" instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "NaN" instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "Infinity" instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "-Infinity" instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "1.001" instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "1.005" instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "1.999" instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "1,00" instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "1_000.00" instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount " 1.00" instead of rounding/coercing [0.02ms]
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "1.00 " instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "0x10" instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "１.００" instead of rounding/coercing [0.03ms]
+(pass) Money: exact fixed-scale decimal contract > rejects invalid public amount "1.00\n" instead of rounding/coercing
+(pass) Money: exact fixed-scale decimal contract > rejects non-string public amount {"amount":1} [0.04ms]
+(pass) Money: exact fixed-scale decimal contract > rejects non-string public amount {"amount":0}
+(pass) Money: exact fixed-scale decimal contract > rejects non-string public amount {"amount":null}
+(pass) Money: exact fixed-scale decimal contract > rejects non-string public amount {}
+(pass) Money: exact fixed-scale decimal contract > rejects non-string public amount {"amount":true}
+(pass) Money: exact fixed-scale decimal contract > rejects non-string public amount {"amount":{}}
+(pass) Money: exact fixed-scale decimal contract > rejects non-string public amount {"amount":[]} [0.01ms]
+(pass) Money: exact fixed-scale decimal contract > rejects invalid money container {"value":null} [0.06ms]
+(pass) Money: exact fixed-scale decimal contract > rejects invalid money container {}
+(pass) Money: exact fixed-scale decimal contract > rejects invalid money container {"value":[]}
+(pass) Money: exact fixed-scale decimal contract > rejects invalid money container {"value":"25.00"} [0.02ms]
+(pass) Money: exact fixed-scale decimal contract > rejects unsupported currency "" [0.03ms]
+(pass) Money: exact fixed-scale decimal contract > rejects unsupported currency "brl"
+(pass) Money: exact fixed-scale decimal contract > rejects unsupported currency "BR"
+(pass) Money: exact fixed-scale decimal contract > rejects unsupported currency "BRLX"
+(pass) Money: exact fixed-scale decimal contract > rejects unsupported currency "JPY"
+(pass) Money: exact fixed-scale decimal contract > rejects unsupported currency "ZZZ"
+(pass) Money: exact fixed-scale decimal contract > rejects unsupported currency " BRL"
+(pass) Money: exact fixed-scale decimal contract > rejects unsupported currency "BRL "
+(pass) Money: exact fixed-scale decimal contract > accepts numeric(28,2) maximum and rejects one cent beyond it [0.06ms]
+(pass) Money: exact fixed-scale decimal contract > negative internal results serialize correctly and are not public inputs [0.05ms]
+(pass) Money: exact fixed-scale decimal contract > zero and comparisons preserve exact cent boundaries [0.05ms]
+(pass) Money: exact fixed-scale decimal contract > currency mismatches fail arithmetic/comparison and equality remains false [0.05ms]
+(pass) Money: exact fixed-scale decimal contract > operations and serialization cannot mutate the source value [0.04ms]
+(pass) Money: exact fixed-scale decimal contract > a deterministic sequence of credits and reversals returns exactly to the start [0.05ms]
+
+test/unit/wallet-ledger.test.ts:
+(pass) Wallet aggregate and corresponding immutable ledger facts > opening initializes version 1, including a zero wallet [0.10ms]
+(pass) Wallet aggregate and corresponding immutable ledger facts > negative opening is rejected even if passed as an internal Money result [0.05ms]
+(pass) Wallet aggregate and corresponding immutable ledger facts > debit creates the exact matching ledger entry and increments version once [0.24ms]
+(pass) Wallet aggregate and corresponding immutable ledger facts > a second 80.00 debit is rejected without changing the 20.00 balance or version [0.07ms]
+(pass) Wallet aggregate and corresponding immutable ledger facts > reversal overdraft has a distinct failure code and leaves the wallet untouched [0.03ms]
+(pass) Wallet aggregate and corresponding immutable ledger facts > full debit to zero is valid; subsequent credit creates a continuous ledger chain [0.06ms]
+(pass) Wallet aggregate and corresponding immutable ledger facts > debit rejects wrong currency and zero, without mutating the wallet [0.05ms]
+(pass) Wallet aggregate and corresponding immutable ledger facts > credit rejects wrong currency and zero, without mutating the wallet [0.01ms]
+(pass) Wallet aggregate and corresponding immutable ledger facts > overflow or invalid ledger identity cannot partially mutate the aggregate [0.07ms]
+(pass) Wallet aggregate and corresponding immutable ledger facts > dates passed into and read from the aggregate are defensive copies [0.03ms]
+(pass) Wallet aggregate and corresponding immutable ledger facts > rehydration preserves existing version and does not replay an opening movement [0.06ms]
+(pass) WalletLedgerEntry factories and structural immutability > opening ledger is CREDIT from zero with wallet version 1 [0.05ms]
+(pass) WalletLedgerEntry factories and structural immutability > rejects inconsistent arithmetic, direction or currency {"balanceAfter":{"amount":"99.99","currency":"BRL"}} [0.02ms]
+(pass) WalletLedgerEntry factories and structural immutability > rejects inconsistent arithmetic, direction or currency {"direction":"DEBIT"}
+(pass) WalletLedgerEntry factories and structural immutability > rejects inconsistent arithmetic, direction or currency {"money":{"amount":"100.00","currency":"USD"}}
+(pass) WalletLedgerEntry factories and structural immutability > rejects inconsistent arithmetic, direction or currency {"direction":"OTHER"}
+(pass) WalletLedgerEntry factories and structural immutability > rejects invalid ledger state {"money":{"amount":"0.00","currency":"BRL"}} [0.03ms]
+(pass) WalletLedgerEntry factories and structural immutability > rejects invalid ledger state {"money":{"amount":"-1.00","currency":"BRL"}}
+(pass) WalletLedgerEntry factories and structural immutability > rejects invalid ledger state {"balanceBefore":{"amount":"-1.00","currency":"BRL"}} [0.02ms]
+(pass) WalletLedgerEntry factories and structural immutability > rejects invalid ledger state {"balanceAfter":{"amount":"-1.00","currency":"BRL"}}
+(pass) WalletLedgerEntry factories and structural immutability > rejects invalid ledger state {"walletVersion":0}
+(pass) WalletLedgerEntry factories and structural immutability > rejects invalid ledger state {"walletVersion":1.5}
+(pass) WalletLedgerEntry factories and structural immutability > the entry cannot be reassigned or changed through a Date alias [0.04ms]
+(pass) WalletLedgerEntry factories and structural immutability > rehydration reconstructs state without replaying creation validation [0.02ms]
+
+ 185 pass
+ 0 fail
+ 658 expect() calls
+Ran 185 tests across 6 files. [6.23s]
+$ bun test --timeout 90000 test/integration
+bun test v1.3.3 (274e01c7)
+
+test/integration/messaging.test.ts:
+[migrator] Processing 'Migration202611250002'
+[migrator] Applied 'Migration202611250002'
+{"timestamp":"2026-11-25T04:24:13.018Z","level":"info","event":"transaction.completed","correlationId":"0041b0cb-d0ba-43f5-8755-39b86bf162cc","messageId":"0041b0cb-d0ba-43f5-8755-39b86bf162cc","transactionId":"35119513-bec3-4aea-a0d9-e5e76375540b","walletId":"d1c944e6-3e1c-4aa4-a3c1-46771af90512","providerId":"integration-messaging","status":"PROCESSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:13.024Z","level":"info","event":"consumer.acknowledged","correlationId":"0041b0cb-d0ba-43f5-8755-39b86bf162cc","messageId":"0041b0cb-d0ba-43f5-8755-39b86bf162cc","walletId":"d1c944e6-3e1c-4aa4-a3c1-46771af90512","providerId":"integration-messaging","transactionId":"35119513-bec3-4aea-a0d9-e5e76375540b","status":"PROCESSED"}
+{"timestamp":"2026-11-25T04:24:13.033Z","level":"info","event":"transaction.completed","correlationId":"0041b0cb-d0ba-43f5-8755-39b86bf162cc","messageId":"0041b0cb-d0ba-43f5-8755-39b86bf162cc","transactionId":"35119513-bec3-4aea-a0d9-e5e76375540b","walletId":"d1c944e6-3e1c-4aa4-a3c1-46771af90512","providerId":"integration-messaging","status":"PROCESSED","idempotentReplay":true}
+{"timestamp":"2026-11-25T04:24:13.034Z","level":"info","event":"consumer.acknowledged","correlationId":"0041b0cb-d0ba-43f5-8755-39b86bf162cc","messageId":"0041b0cb-d0ba-43f5-8755-39b86bf162cc","walletId":"d1c944e6-3e1c-4aa4-a3c1-46771af90512","providerId":"integration-messaging","transactionId":"35119513-bec3-4aea-a0d9-e5e76375540b","status":"PROCESSED"}
+{"timestamp":"2026-11-25T04:24:13.049Z","level":"warn","event":"consumer.dead_lettered","correlationId":"0041b0cb-d0ba-43f5-8755-39b86bf162cc","messageId":"0041b0cb-d0ba-43f5-8755-39b86bf162cc","walletId":"d1c944e6-3e1c-4aa4-a3c1-46771af90512","providerId":"integration-messaging","code":"INBOX_PAYLOAD_CONFLICT","attempts":1}
+(pass) PostgreSQL and LocalStack: transactional messaging and failure recovery > persists inbox, finance, ledger and outbox; real redelivery has one effect and conflicts go to DLQ [180.00ms]
+{"timestamp":"2026-11-25T04:24:13.083Z","level":"warn","event":"consumer.retry_scheduled","code":"DLQ_OR_AUDIT_UNAVAILABLE","attempts":1}
+{"timestamp":"2026-11-25T04:24:13.094Z","level":"warn","event":"consumer.dead_lettered","code":"INVALID_MESSAGE_ENVELOPE","attempts":2}
+(pass) PostgreSQL and LocalStack: transactional messaging and failure recovery > an unavailable DLQ does not erase a malformed real SQS message [44.58ms]
+{"timestamp":"2026-11-25T04:24:13.132Z","level":"warn","event":"consumer.retry_scheduled","correlationId":"ad9eb0dc-679c-4050-b28f-5b94071a6d1c","messageId":"ad9eb0dc-679c-4050-b28f-5b94071a6d1c","walletId":"c4188f25-d529-45c0-9686-9ff804bd219b","providerId":"integration-messaging","code":"INFRASTRUCTURE_UNAVAILABLE","attempts":1}
+{"timestamp":"2026-11-25T04:24:13.147Z","level":"warn","event":"consumer.retry_scheduled","correlationId":"ad9eb0dc-679c-4050-b28f-5b94071a6d1c","messageId":"ad9eb0dc-679c-4050-b28f-5b94071a6d1c","walletId":"c4188f25-d529-45c0-9686-9ff804bd219b","providerId":"integration-messaging","code":"INFRASTRUCTURE_UNAVAILABLE","attempts":2}
+{"timestamp":"2026-11-25T04:24:13.173Z","level":"warn","event":"consumer.dead_lettered","correlationId":"ad9eb0dc-679c-4050-b28f-5b94071a6d1c","messageId":"ad9eb0dc-679c-4050-b28f-5b94071a6d1c","walletId":"c4188f25-d529-45c0-9686-9ff804bd219b","providerId":"integration-messaging","code":"PROCESSING_RETRY_EXHAUSTED","attempts":3}
+(pass) PostgreSQL and LocalStack: transactional messaging and failure recovery > real retries roll back all effects, then persist FAILED before sending to DLQ [77.35ms]
+{"timestamp":"2026-11-25T04:24:13.202Z","level":"info","event":"outbox.published","eventId":"6d41f570-90e2-4b2c-b8ab-f19452695488","walletId":"d1c944e6-3e1c-4aa4-a3c1-46771af90512","eventType":"WalletBalanceChanged","correlationId":"0041b0cb-d0ba-43f5-8755-39b86bf162cc","messageId":"0041b0cb-d0ba-43f5-8755-39b86bf162cc","transactionId":"35119513-bec3-4aea-a0d9-e5e76375540b"}
+{"timestamp":"2026-11-25T04:24:13.207Z","level":"info","event":"outbox.published","eventId":"46c91d48-e863-44b3-8279-2a3507751456","walletId":"d1c944e6-3e1c-4aa4-a3c1-46771af90512","eventType":"WalletBalanceChanged","correlationId":"9ca66408-f842-4a48-bba9-5b4dd86f4ac0","messageId":"64af84d1-c1c0-4c9d-896b-0971532e21be","transactionId":"64af84d1-c1c0-4c9d-896b-0971532e21be"}
+{"timestamp":"2026-11-25T04:24:13.209Z","level":"info","event":"outbox.published","eventId":"5b515961-1817-487c-94c9-52d07967ef58","walletId":"d1c944e6-3e1c-4aa4-a3c1-46771af90512","eventType":"WagerTransactionProcessed","correlationId":"9ca66408-f842-4a48-bba9-5b4dd86f4ac0","messageId":"64af84d1-c1c0-4c9d-896b-0971532e21be","transactionId":"64af84d1-c1c0-4c9d-896b-0971532e21be","providerId":"__system__"}
+{"timestamp":"2026-11-25T04:24:13.209Z","level":"info","event":"outbox.published","eventId":"e0c45c6e-a7ab-44c2-a1b6-74c78f2a16fa","walletId":"d1c944e6-3e1c-4aa4-a3c1-46771af90512","eventType":"WagerTransactionProcessed","correlationId":"0041b0cb-d0ba-43f5-8755-39b86bf162cc","messageId":"0041b0cb-d0ba-43f5-8755-39b86bf162cc","transactionId":"35119513-bec3-4aea-a0d9-e5e76375540b","providerId":"integration-messaging"}
+{"timestamp":"2026-11-25T04:24:13.210Z","level":"info","event":"outbox.published","eventId":"9cc46768-169e-469f-aec5-5035ef56e8d8","walletId":"3ca9a584-2a17-4ebc-a5da-ae0f35e269f8","eventType":"WagerTransactionProcessed","correlationId":"bf9b87da-a752-46c2-ad59-c7e5869835e6","messageId":"46163cd6-f255-4e70-b26f-f040a6893d70","transactionId":"46163cd6-f255-4e70-b26f-f040a6893d70","providerId":"__system__"}
+{"timestamp":"2026-11-25T04:24:13.211Z","level":"info","event":"outbox.published","eventId":"a3422509-5dae-4d76-84c0-dc12cd99dfde","walletId":"3ca9a584-2a17-4ebc-a5da-ae0f35e269f8","eventType":"WalletBalanceChanged","correlationId":"bf9b87da-a752-46c2-ad59-c7e5869835e6","messageId":"46163cd6-f255-4e70-b26f-f040a6893d70","transactionId":"46163cd6-f255-4e70-b26f-f040a6893d70"}
+{"timestamp":"2026-11-25T04:24:13.213Z","level":"info","event":"outbox.published","eventId":"7cd3841f-80ef-4fe3-a9dc-bcf36fff0831","walletId":"c4188f25-d529-45c0-9686-9ff804bd219b","eventType":"WagerTransactionProcessed","correlationId":"7357cb3f-00b7-40d1-a0a5-a12a4935d82c","messageId":"5ee04392-fcc0-4a94-9c89-efe00dfa4fd7","transactionId":"5ee04392-fcc0-4a94-9c89-efe00dfa4fd7","providerId":"__system__"}
+{"timestamp":"2026-11-25T04:24:13.213Z","level":"info","event":"outbox.published","eventId":"effc8941-3166-4f7c-8e37-55e1bfe21c95","walletId":"c4188f25-d529-45c0-9686-9ff804bd219b","eventType":"WalletBalanceChanged","correlationId":"7357cb3f-00b7-40d1-a0a5-a12a4935d82c","messageId":"5ee04392-fcc0-4a94-9c89-efe00dfa4fd7","transactionId":"5ee04392-fcc0-4a94-9c89-efe00dfa4fd7"}
+{"timestamp":"2026-11-25T04:24:13.213Z","level":"info","event":"outbox.published","eventId":"47c0f30e-8318-42d0-8200-7428be9ab68b","walletId":"c4188f25-d529-45c0-9686-9ff804bd219b","eventType":"WagerTransactionFailed","correlationId":"ad9eb0dc-679c-4050-b28f-5b94071a6d1c","messageId":"ad9eb0dc-679c-4050-b28f-5b94071a6d1c","transactionId":"608ae80a-fd4c-43eb-b5fb-077a9f23bed0","providerId":"integration-messaging"}
+{"timestamp":"2026-11-25T04:24:13.231Z","level":"info","event":"transaction.completed","correlationId":"56ecfc05-0ccc-4375-9def-87c2760470b5","transactionId":"2d5100c1-5f97-489a-be6a-931dc86c1879","walletId":"3dbe97fb-b5d4-4b7c-9ea1-cbae52945e59","providerId":"integration-messaging","status":"PROCESSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:13.251Z","level":"info","event":"outbox.published","eventId":"8e6e02d0-70a1-406a-90d2-d4a9c937f1ed","walletId":"3dbe97fb-b5d4-4b7c-9ea1-cbae52945e59","eventType":"WagerTransactionProcessed","correlationId":"56ecfc05-0ccc-4375-9def-87c2760470b5","messageId":"2d5100c1-5f97-489a-be6a-931dc86c1879","transactionId":"2d5100c1-5f97-489a-be6a-931dc86c1879","providerId":"integration-messaging"}
+{"timestamp":"2026-11-25T04:24:13.255Z","level":"info","event":"outbox.published","eventId":"6d302305-2a92-4133-976d-e023f6c99104","walletId":"3dbe97fb-b5d4-4b7c-9ea1-cbae52945e59","eventType":"WalletBalanceChanged","correlationId":"56ecfc05-0ccc-4375-9def-87c2760470b5","messageId":"2d5100c1-5f97-489a-be6a-931dc86c1879","transactionId":"2d5100c1-5f97-489a-be6a-931dc86c1879"}
+{"timestamp":"2026-11-25T04:24:13.255Z","level":"info","event":"outbox.published","eventId":"64a4a83b-38a1-4cbf-8e86-d3528bd08246","walletId":"3dbe97fb-b5d4-4b7c-9ea1-cbae52945e59","eventType":"WalletBalanceChanged","correlationId":"e8e44d46-7aa0-4431-ad84-12e41ea9d4fb","messageId":"ee067c12-ea24-4897-88f1-23cc2aaedabd","transactionId":"ee067c12-ea24-4897-88f1-23cc2aaedabd"}
+{"timestamp":"2026-11-25T04:24:13.255Z","level":"info","event":"outbox.published","eventId":"3716b059-78e0-436c-9254-5634cae4ee07","walletId":"3dbe97fb-b5d4-4b7c-9ea1-cbae52945e59","eventType":"WagerTransactionProcessed","correlationId":"e8e44d46-7aa0-4431-ad84-12e41ea9d4fb","messageId":"ee067c12-ea24-4897-88f1-23cc2aaedabd","transactionId":"ee067c12-ea24-4897-88f1-23cc2aaedabd","providerId":"__system__"}
+(pass) PostgreSQL and LocalStack: transactional messaging and failure recovery > two publishers claim different rows and deliver every committed event through real SQS [108.78ms]
+{"timestamp":"2026-11-25T04:24:13.311Z","level":"warn","event":"outbox.publish_retry","eventId":"dddd2e26-a891-40a7-9db4-fedec2f0f244","walletId":"bfb3645d-0549-4115-82ae-c3b8772bb144","eventType":"WagerTransactionProcessed","correlationId":"c5d7b3a0-a728-4fa1-8767-393dcdd4da5c","messageId":"1d748d48-e2c2-4394-9fb8-57067dd1872e","transactionId":"1d748d48-e2c2-4394-9fb8-57067dd1872e","providerId":"__system__","attempts":1,"code":"EVENT_PUBLICATION_INCOMPLETE"}
+{"timestamp":"2026-11-25T04:24:13.312Z","level":"warn","event":"outbox.publish_retry","eventId":"62f38489-306b-4869-a249-1460bb318335","walletId":"bfb3645d-0549-4115-82ae-c3b8772bb144","eventType":"WalletBalanceChanged","correlationId":"c5d7b3a0-a728-4fa1-8767-393dcdd4da5c","messageId":"1d748d48-e2c2-4394-9fb8-57067dd1872e","transactionId":"1d748d48-e2c2-4394-9fb8-57067dd1872e","attempts":1,"code":"EVENT_PUBLICATION_INCOMPLETE"}
+{"timestamp":"2026-11-25T04:24:13.320Z","level":"info","event":"outbox.published","eventId":"62f38489-306b-4869-a249-1460bb318335","walletId":"bfb3645d-0549-4115-82ae-c3b8772bb144","eventType":"WalletBalanceChanged","correlationId":"c5d7b3a0-a728-4fa1-8767-393dcdd4da5c","messageId":"1d748d48-e2c2-4394-9fb8-57067dd1872e","transactionId":"1d748d48-e2c2-4394-9fb8-57067dd1872e"}
+{"timestamp":"2026-11-25T04:24:13.320Z","level":"info","event":"outbox.published","eventId":"dddd2e26-a891-40a7-9db4-fedec2f0f244","walletId":"bfb3645d-0549-4115-82ae-c3b8772bb144","eventType":"WagerTransactionProcessed","correlationId":"c5d7b3a0-a728-4fa1-8767-393dcdd4da5c","messageId":"1d748d48-e2c2-4394-9fb8-57067dd1872e","transactionId":"1d748d48-e2c2-4394-9fb8-57067dd1872e","providerId":"__system__"}
+(pass) PostgreSQL and LocalStack: transactional messaging and failure recovery > failed publication keeps the original event durable and another publisher resumes it [39.37ms]
+{"timestamp":"2026-11-25T04:24:13.354Z","level":"info","event":"outbox.published","eventId":"766237f9-e65b-4719-a9f6-a122cf19138f","walletId":"50aa5188-28b8-47e0-a431-8b96d3d82aa7","eventType":"WalletBalanceChanged","correlationId":"2ddc9c34-6dc8-475c-b9a5-1e58c1025c20","messageId":"ec316330-4396-4b0e-8620-8b972d398d6d","transactionId":"ec316330-4396-4b0e-8620-8b972d398d6d"}
+{"timestamp":"2026-11-25T04:24:13.354Z","level":"info","event":"outbox.published","eventId":"29650b9c-0813-4537-8d01-264ef5143168","walletId":"50aa5188-28b8-47e0-a431-8b96d3d82aa7","eventType":"WagerTransactionProcessed","correlationId":"2ddc9c34-6dc8-475c-b9a5-1e58c1025c20","messageId":"ec316330-4396-4b0e-8620-8b972d398d6d","transactionId":"ec316330-4396-4b0e-8620-8b972d398d6d","providerId":"__system__"}
+(pass) PostgreSQL and LocalStack: transactional messaging and failure recovery > an old publisher cannot mark a row after its lease is replaced [31.36ms]
+{"timestamp":"2026-11-25T04:24:13.777Z","level":"info","event":"transaction.completed","correlationId":"ca49cd96-4681-4c7a-b4df-45d69a634156","messageId":"ca49cd96-4681-4c7a-b4df-45d69a634156","transactionId":"bb5839e7-e334-4934-afdc-49ce638e1113","walletId":"e27a427e-b4f5-4412-b7a7-6a1fa059dffc","providerId":"integration-messaging","status":"PROCESSED","idempotentReplay":true}
+{"timestamp":"2026-11-25T04:24:13.779Z","level":"info","event":"consumer.acknowledged","correlationId":"ca49cd96-4681-4c7a-b4df-45d69a634156","messageId":"ca49cd96-4681-4c7a-b4df-45d69a634156","walletId":"e27a427e-b4f5-4412-b7a7-6a1fa059dffc","providerId":"integration-messaging","transactionId":"bb5839e7-e334-4934-afdc-49ce638e1113","status":"PROCESSED"}
+(pass) PostgreSQL and LocalStack: transactional messaging and failure recovery > a worker killed after SQL commit and before ACK survives real SQS redelivery without another debit [424.83ms]
+{"timestamp":"2026-11-25T04:24:13.801Z","level":"info","event":"outbox.published","eventId":"7f66cfbb-a6f9-472b-acbe-bc0fcc291430","walletId":"e27a427e-b4f5-4412-b7a7-6a1fa059dffc","eventType":"WalletBalanceChanged","correlationId":"66dc06c7-437a-416f-9796-e3e09b0b4861","messageId":"956a1e45-014a-43cd-ae24-4d1024204c88","transactionId":"956a1e45-014a-43cd-ae24-4d1024204c88"}
+{"timestamp":"2026-11-25T04:24:13.801Z","level":"info","event":"outbox.published","eventId":"42b1f450-9ab1-4257-b118-a10c3f6e7813","walletId":"e27a427e-b4f5-4412-b7a7-6a1fa059dffc","eventType":"WagerTransactionProcessed","correlationId":"66dc06c7-437a-416f-9796-e3e09b0b4861","messageId":"956a1e45-014a-43cd-ae24-4d1024204c88","transactionId":"956a1e45-014a-43cd-ae24-4d1024204c88","providerId":"__system__"}
+{"timestamp":"2026-11-25T04:24:13.801Z","level":"info","event":"outbox.published","eventId":"442cfe31-5d6c-4f9e-8607-4560dcc0222f","walletId":"e27a427e-b4f5-4412-b7a7-6a1fa059dffc","eventType":"WagerTransactionProcessed","correlationId":"ca49cd96-4681-4c7a-b4df-45d69a634156","messageId":"ca49cd96-4681-4c7a-b4df-45d69a634156","transactionId":"bb5839e7-e334-4934-afdc-49ce638e1113","providerId":"integration-messaging"}
+{"timestamp":"2026-11-25T04:24:13.802Z","level":"info","event":"outbox.published","eventId":"de6f4079-53d1-4f06-8e96-d0458d44eeac","walletId":"e27a427e-b4f5-4412-b7a7-6a1fa059dffc","eventType":"WalletBalanceChanged","correlationId":"ca49cd96-4681-4c7a-b4df-45d69a634156","messageId":"ca49cd96-4681-4c7a-b4df-45d69a634156","transactionId":"bb5839e7-e334-4934-afdc-49ce638e1113"}
+{"timestamp":"2026-11-25T04:24:14.134Z","level":"info","event":"outbox.published","eventId":"8fe3da7a-b54e-483f-9ae6-97b0c1bfc727","walletId":"a5ba1834-8031-41b4-b89a-df99f4d01232","eventType":"WagerTransactionProcessed","correlationId":"0eafaecf-23e4-4615-a101-68e42202baed","messageId":"eedece99-dac9-4c55-8779-93101056aaa7","transactionId":"eedece99-dac9-4c55-8779-93101056aaa7","providerId":"__system__"}
+{"timestamp":"2026-11-25T04:24:14.135Z","level":"info","event":"outbox.published","eventId":"a3b32e17-a9f5-49c4-847a-dbdee7e39d1f","walletId":"a5ba1834-8031-41b4-b89a-df99f4d01232","eventType":"WalletBalanceChanged","correlationId":"0eafaecf-23e4-4615-a101-68e42202baed","messageId":"eedece99-dac9-4c55-8779-93101056aaa7","transactionId":"eedece99-dac9-4c55-8779-93101056aaa7"}
+(pass) PostgreSQL and LocalStack: transactional messaging and failure recovery > a publisher killed after SQS accepts an event recovers the same eventId after lease expiry [368.57ms]
+{"timestamp":"2026-11-25T04:24:14.175Z","level":"info","event":"transaction.completed","correlationId":"057197c0-6ff9-42e5-9c1f-80a992c3ddbb","messageId":"057197c0-6ff9-42e5-9c1f-80a992c3ddbb","transactionId":"6100a088-1166-4e41-a639-51a65cf81999","walletId":"1ca90674-9a3f-4f2d-b2df-7c31c87d17e6","providerId":"integration-messaging","status":"PENDING_REFERENCE","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.176Z","level":"info","event":"consumer.acknowledged","correlationId":"057197c0-6ff9-42e5-9c1f-80a992c3ddbb","messageId":"057197c0-6ff9-42e5-9c1f-80a992c3ddbb","walletId":"1ca90674-9a3f-4f2d-b2df-7c31c87d17e6","providerId":"integration-messaging","transactionId":"6100a088-1166-4e41-a639-51a65cf81999","status":"PENDING_REFERENCE"}
+{"timestamp":"2026-11-25T04:24:14.185Z","level":"info","event":"transaction.completed","correlationId":"1b12a8a9-276b-490f-8328-f1660049f2a1","transactionId":"d13a8683-21fc-45be-ac88-6a7952127364","walletId":"1ca90674-9a3f-4f2d-b2df-7c31c87d17e6","providerId":"integration-messaging","status":"PROCESSED","idempotentReplay":false}
+(pass) PostgreSQL and LocalStack: transactional messaging and failure recovery > an out-of-order REFUND is ACKed as pending, then three workers apply it only once [60.98ms]
+
+test/integration/migrations.test.ts:
+[migrator] Processing 'Migration202611250001'
+[migrator] Reverted 'Migration202611250001'
+[migrator] Processing 'Migration202611250001'
+[migrator] Applied 'Migration202611250001'
+[migrator] Processing 'Migration202611250002'
+[migrator] Applied 'Migration202611250002'
+[migrator] Processing 'Migration202611250002'
+[migrator] Reverted 'Migration202611250002'
+[migrator] Processing 'Migration202611250001'
+[migrator] Reverted 'Migration202611250001'
+[migrator] Processing 'Migration202611250001'
+[migrator] Applied 'Migration202611250001'
+[migrator] Processing 'Migration202611250002'
+[migrator] Applied 'Migration202611250002'
+(pass) Real PostgreSQL MikroORM migration lifecycle > up is idempotent, down removes tables/triggers/functions, and up rebuilds a usable schema [83.15ms]
+
+test/integration/financial.test.ts:
+(pass) Real PostgreSQL financial operations > positive opening is atomic with OPENING, credit ledger, version 1 and two integration events [10.02ms]
+{"timestamp":"2026-11-25T04:24:14.527Z","level":"info","event":"transaction.completed","correlationId":"1587a0aa-5517-4c63-9ab9-590736fc256e","transactionId":"b116f77c-66b9-4426-80e6-e6d8c6a97df6","walletId":"a825bf29-3c83-4096-9d26-4f7cc39bf8d9","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+(pass) Real PostgreSQL financial operations > zero opening has no artificial movement; first credit uses version 2 [13.31ms]
+(pass) Real PostgreSQL financial operations > wallet uniqueness is enforced on player and currency; distinct currency is independent [12.99ms]
+{"timestamp":"2026-11-25T04:24:14.549Z","level":"info","event":"transaction.completed","correlationId":"c0dddea4-7f06-470e-9b24-8db5ed559508","transactionId":"80cd5e33-10af-44d0-be11-ac5b5191d34d","walletId":"c8c7e9c1-a69a-40dc-990f-2fe2e64cce7f","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.557Z","level":"info","event":"transaction.completed","correlationId":"b5e65da7-a142-4346-b530-c81cfcd96994","transactionId":"bd2905a7-ae7b-43b3-a02c-a780267fc0b8","walletId":"c8c7e9c1-a69a-40dc-990f-2fe2e64cce7f","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.561Z","level":"info","event":"transaction.completed","correlationId":"73333818-cf61-4c7d-bbc1-be8331895aec","transactionId":"fba4bb16-a47e-40eb-a087-0e5d87d21069","walletId":"c8c7e9c1-a69a-40dc-990f-2fe2e64cce7f","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+(pass) Real PostgreSQL financial operations > BET and WIN change the balance; LOSS leaves version and ledger unchanged [20.93ms]
+{"timestamp":"2026-11-25T04:24:14.568Z","level":"info","event":"transaction.completed","correlationId":"24ee2213-221c-41f5-9e9e-55164aeccac8","transactionId":"8720c446-be1a-4477-a499-98145040f071","walletId":"5fcc748c-e2ea-46c5-8114-015b6727e031","providerId":"provider-a","status":"REJECTED","failureCode":"INSUFFICIENT_FUNDS","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.569Z","level":"info","event":"transaction.completed","correlationId":"0273fe2f-6ef1-4874-86f3-4cb672e524d6","transactionId":"8720c446-be1a-4477-a499-98145040f071","walletId":"5fcc748c-e2ea-46c5-8114-015b6727e031","providerId":"provider-a","status":"REJECTED","failureCode":"INSUFFICIENT_FUNDS","idempotentReplay":true}
+(pass) Real PostgreSQL financial operations > insufficient BET is rejected without a debit and keeps its failure code on replay [7.06ms]
+{"timestamp":"2026-11-25T04:24:14.579Z","level":"info","event":"transaction.completed","correlationId":"754317f2-4343-4b07-ae54-60a4b3f42a2c","transactionId":"f31798cd-f811-47ff-af9e-68f0af02d299","walletId":"b6db8ab8-73e8-4b48-a5b7-56b475d48842","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.583Z","level":"info","event":"transaction.completed","correlationId":"1a95fec1-37d3-43cc-931d-9a5f9016fff9","transactionId":"24b07445-3e2e-4a29-a3e9-924456ba1948","walletId":"b6db8ab8-73e8-4b48-a5b7-56b475d48842","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.590Z","level":"info","event":"transaction.completed","correlationId":"24174a7b-d589-4e5b-945a-ab75b36e6505","transactionId":"ab1a3c50-5013-4d00-a12b-be035871879e","walletId":"b6db8ab8-73e8-4b48-a5b7-56b475d48842","providerId":"provider-a","status":"REJECTED","failureCode":"REFERENCE_ALREADY_REVERSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.595Z","level":"info","event":"transaction.completed","correlationId":"4ba7dcc5-7b74-4e7a-a124-2cdcf6e6708f","transactionId":"26f2452f-9070-4f3e-a0da-37a3198769bc","walletId":"b6db8ab8-73e8-4b48-a5b7-56b475d48842","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.598Z","level":"info","event":"transaction.completed","correlationId":"b9c71117-f8b1-4a5f-b91c-80a7225685a3","transactionId":"7e7b65cb-9c71-41cf-8ce1-5c1e87a6e2f9","walletId":"b6db8ab8-73e8-4b48-a5b7-56b475d48842","providerId":"provider-a","status":"REJECTED","failureCode":"REFERENCE_ALREADY_REVERSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.601Z","level":"info","event":"transaction.completed","correlationId":"2cef9818-9be2-4968-b7a8-c1df374f8d17","transactionId":"e14c53cf-70dc-4bba-8235-ef47e767832e","walletId":"b6db8ab8-73e8-4b48-a5b7-56b475d48842","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+(pass) Real PostgreSQL financial operations > refund and rollback uniqueness is per type; rollback of a refund debits [35.98ms]
+{"timestamp":"2026-11-25T04:24:14.610Z","level":"info","event":"transaction.completed","correlationId":"9a84e0eb-2be7-498f-8ef2-322218e77705","transactionId":"8c94d5a3-6424-4759-bdb6-09a10bb88b5b","walletId":"3c41062b-d5bb-4ad1-87a6-78ec7e1c272c","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.613Z","level":"info","event":"transaction.completed","correlationId":"c8a3ef51-5fd2-467f-b969-8ef6d42c0195","transactionId":"e6fa343d-7cf1-42a1-857e-803e0ee71281","walletId":"3c41062b-d5bb-4ad1-87a6-78ec7e1c272c","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.616Z","level":"info","event":"transaction.completed","correlationId":"648d5ef8-2ae3-45c3-950e-c77a98d2abb9","transactionId":"4b48873e-0940-47a1-9a05-cf731ed88b61","walletId":"3c41062b-d5bb-4ad1-87a6-78ec7e1c272c","providerId":"provider-a","status":"REJECTED","failureCode":"REVERSAL_INSUFFICIENT_FUNDS","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.623Z","level":"info","event":"transaction.completed","correlationId":"c983b29f-f376-467c-8b5c-e4fbad5454e5","transactionId":"e191aa69-0dda-4838-9d3e-7546b49074b4","walletId":"3c41062b-d5bb-4ad1-87a6-78ec7e1c272c","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.624Z","level":"info","event":"transaction.completed","correlationId":"710ec519-6234-4297-af42-198e01fe3d5a","transactionId":"4b48873e-0940-47a1-9a05-cf731ed88b61","walletId":"3c41062b-d5bb-4ad1-87a6-78ec7e1c272c","providerId":"provider-a","status":"REJECTED","failureCode":"REVERSAL_INSUFFICIENT_FUNDS","idempotentReplay":true}
+{"timestamp":"2026-11-25T04:24:14.628Z","level":"info","event":"transaction.completed","correlationId":"db594684-40c3-4ad8-bc80-1a56bf1e8a49","transactionId":"674e4bfa-cc1c-46eb-9ca9-34b854214742","walletId":"3c41062b-d5bb-4ad1-87a6-78ec7e1c272c","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+(pass) Real PostgreSQL financial operations > rejected reversal does not reserve the reference; a fresh operation succeeds once funded [23.18ms]
+{"timestamp":"2026-11-25T04:24:14.633Z","level":"info","event":"transaction.completed","correlationId":"40201c2f-9249-45f4-9d2f-5cea40adcf09","transactionId":"13fe14d1-7f76-445c-9246-e083a71263e2","walletId":"ff16d5b5-0db9-4071-8bbc-79b5655f9d1d","providerId":"provider-a","status":"REJECTED","failureCode":"PLAYER_MISMATCH","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.639Z","level":"info","event":"transaction.completed","correlationId":"52dda24f-a3b9-46ad-b238-391d460086ab","transactionId":"fd94939e-0d7c-4d39-a4aa-d5ea5fa346cd","walletId":"ff16d5b5-0db9-4071-8bbc-79b5655f9d1d","providerId":"provider-a","status":"REJECTED","failureCode":"CURRENCY_MISMATCH","idempotentReplay":false}
+(pass) Real PostgreSQL financial operations > wallet owner and currency violations are audited as rejected business outcomes [11.62ms]
+{"timestamp":"2026-11-25T04:24:14.647Z","level":"info","event":"transaction.completed","correlationId":"1e628d7b-e346-42e9-91a0-dc9cafba747f","transactionId":"2a6bbf29-6ce9-4776-bf25-8f8975fccc28","walletId":"db6fe1f0-4ae5-453e-a5ef-bd8a94dd3385","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.650Z","level":"info","event":"transaction.completed","correlationId":"db97f319-faa3-44aa-818f-f45cd4ffa9b0","transactionId":"26a871ec-f25e-473a-bf6c-f2b158c80a00","walletId":"db6fe1f0-4ae5-453e-a5ef-bd8a94dd3385","providerId":"provider-a","status":"REJECTED","failureCode":"REFERENCE_MISMATCH","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.658Z","level":"info","event":"transaction.completed","correlationId":"71a5288d-587d-4e65-8341-05421d67e3cd","transactionId":"7d01adec-5f25-4520-b1d0-47752e186bdc","walletId":"61965afa-bb04-436e-a12b-9eb43443adc1","providerId":"provider-a","status":"REJECTED","failureCode":"REFERENCE_MISMATCH","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.660Z","level":"info","event":"transaction.completed","correlationId":"45f3a192-3dba-461c-92b3-0c9869883c7c","transactionId":"70cf3525-0eeb-4387-b295-fe59428a8865","walletId":"db6fe1f0-4ae5-453e-a5ef-bd8a94dd3385","providerId":"provider-a","status":"REJECTED","failureCode":"REFERENCE_AMOUNT_MISMATCH","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.664Z","level":"info","event":"transaction.completed","correlationId":"994460ef-b903-4cb5-a730-9501850d1bbc","transactionId":"bee390d6-a096-4222-addf-b905474f1cef","walletId":"db6fe1f0-4ae5-453e-a5ef-bd8a94dd3385","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.670Z","level":"info","event":"transaction.completed","correlationId":"6f21c6fb-f615-4443-bbd2-f1ab856898b1","transactionId":"40c3600f-a002-4107-82e4-2f7191a0670b","walletId":"db6fe1f0-4ae5-453e-a5ef-bd8a94dd3385","providerId":"provider-a","status":"REJECTED","failureCode":"REFERENCE_INVALID_KIND","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.672Z","level":"info","event":"transaction.completed","correlationId":"2a555b3a-fb85-4dd3-af08-e8a244e09049","transactionId":"27f37041-a791-4d6c-81e0-81145f2b2fcc","walletId":"db6fe1f0-4ae5-453e-a5ef-bd8a94dd3385","providerId":"provider-a","status":"REJECTED","failureCode":"INSUFFICIENT_FUNDS","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.675Z","level":"info","event":"transaction.completed","correlationId":"fa320105-c509-4a68-94b3-ade1e08aaa87","transactionId":"a8899f05-4776-453e-80e9-53193115725a","walletId":"db6fe1f0-4ae5-453e-a5ef-bd8a94dd3385","providerId":"provider-a","status":"REJECTED","failureCode":"REFERENCE_NOT_PROCESSED","idempotentReplay":false}
+(pass) Real PostgreSQL financial operations > references reject different round, wallet, amount, kind and rejected targets [35.44ms]
+{"timestamp":"2026-11-25T04:24:14.680Z","level":"info","event":"transaction.completed","correlationId":"e82f6b7e-1094-4eaf-a206-a80d0c1daaf7","transactionId":"69172c71-5674-4e41-8cfc-ec743ab3f87b","walletId":"21c3ab7d-669a-4202-bfec-593cf23e83d7","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.686Z","level":"info","event":"transaction.completed","correlationId":"4d5984a3-92a0-4afe-b952-6778f61ceeb6","transactionId":"652f649a-fcb6-4b39-b956-b66527412edd","walletId":"21c3ab7d-669a-4202-bfec-593cf23e83d7","providerId":"provider-b","status":"PENDING_REFERENCE","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.690Z","level":"info","event":"transaction.completed","correlationId":"ab5df999-8ca5-4634-868b-bfbe6574b41c","transactionId":"27dce37e-27dd-489c-be3d-fb9a3ddb0bd6","walletId":"21c3ab7d-669a-4202-bfec-593cf23e83d7","providerId":"provider-b","status":"PROCESSED","idempotentReplay":false}
+(pass) Real PostgreSQL financial operations > provider-scoped reference lookup cannot use another provider transaction [15.52ms]
+{"timestamp":"2026-11-25T04:24:14.696Z","level":"info","event":"transaction.completed","correlationId":"1f7c569d-ef4c-41c6-af94-0a5b193630f2","transactionId":"470d9053-116c-4886-b34a-6f5ef3a8a0e4","walletId":"bb276b72-dfed-47a0-99bd-efd8a2e1aba8","providerId":"provider-a","status":"REJECTED","failureCode":"BALANCE_LIMIT_EXCEEDED","idempotentReplay":false}
+(pass) Real PostgreSQL financial operations > overflow is a stable audited rejection, never rounded or partially committed [5.05ms]
+{"timestamp":"2026-11-25T04:24:14.705Z","level":"info","event":"transaction.completed","correlationId":"8a1bc5e0-1115-40e4-be18-ab9032320597","transactionId":"bd5c4aed-0cda-480c-bb9c-7a14e2b164d1","walletId":"3bd19408-60fa-4828-8e2a-b99bb604c592","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.708Z","level":"info","event":"transaction.completed","correlationId":"24953405-2918-4cc6-9b3f-e2abc6b345fa","transactionId":"6a20d237-34e9-4453-8579-846a22efb153","walletId":"3bd19408-60fa-4828-8e2a-b99bb604c592","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.724Z","level":"info","event":"transaction.completed","correlationId":"c7c37832-d384-4c34-9abf-cd209699ff7e","transactionId":"bd5c4aed-0cda-480c-bb9c-7a14e2b164d1","walletId":"3bd19408-60fa-4828-8e2a-b99bb604c592","providerId":"provider-a","status":"PROCESSED","idempotentReplay":true}
+(pass) Persistent idempotency, inbox and out-of-order references > replay returns its original balance after later operations and after reconnecting [28.74ms]
+{"timestamp":"2026-11-25T04:24:14.736Z","level":"info","event":"transaction.completed","correlationId":"3ff8e600-639f-4148-be64-15b97f654f5c","transactionId":"4db37d84-feaa-4471-8fbf-e1d5d1ecdbca","walletId":"38fce6f4-9da2-4402-84b9-ff159f8d46bb","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+(pass) Persistent idempotency, inbox and out-of-order references > same key with different payload or another wallet conflicts; alternate key for same external id conflicts [13.77ms]
+{"timestamp":"2026-11-25T04:24:14.745Z","level":"info","event":"transaction.completed","correlationId":"6192ded8-a4b8-461a-a1ff-ab843014eb7f","messageId":"8ac8eccb-9219-4cc4-b828-1ef8616e7f84","transactionId":"80727387-a611-4ec4-b8ac-3fa009df24ec","walletId":"f5485fed-9bc9-4ccc-a61c-dc799a398670","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.747Z","level":"info","event":"transaction.completed","correlationId":"6192ded8-a4b8-461a-a1ff-ab843014eb7f","messageId":"8ac8eccb-9219-4cc4-b828-1ef8616e7f84","transactionId":"80727387-a611-4ec4-b8ac-3fa009df24ec","walletId":"f5485fed-9bc9-4ccc-a61c-dc799a398670","providerId":"provider-a","status":"PROCESSED","idempotentReplay":true}
+(pass) Persistent idempotency, inbox and out-of-order references > inbox replays the committed effect and rejects reused message identity with changed content [14.07ms]
+{"timestamp":"2026-11-25T04:24:14.772Z","level":"info","event":"transaction.completed","correlationId":"10cb9232-8997-4802-824b-d2dada0ab047","messageId":"c1c2b936-3821-487e-9267-746d493a6668","transactionId":"da6f1c2e-d2e4-4747-93c0-b42db375722a","walletId":"b22bc5a7-73cf-452f-b7da-7a9fc3fc4c08","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+(pass) Persistent idempotency, inbox and out-of-order references > before-commit failure rolls back wallet, transaction, ledger, inbox and outbox; redelivery succeeds once [20.17ms]
+{"timestamp":"2026-11-25T04:24:14.802Z","level":"info","event":"transaction.completed","correlationId":"1a8d00ff-e584-4d98-8e79-2313e4d709be","messageId":"8f1ea239-dea2-4b86-8596-2a5f903cf066","transactionId":"a2d703c3-4a5b-4244-8f34-4fc46828ede7","walletId":"13ec286d-4fbf-44b9-84b0-1efe1383846d","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+(pass) Persistent idempotency, inbox and out-of-order references > a PostgreSQL serialization abort before commit retries with fresh state and applies one debit [30.27ms]
+{"timestamp":"2026-11-25T04:24:14.811Z","level":"info","event":"transaction.completed","correlationId":"00102ec5-4183-4e72-bac5-2f8602af92b3","transactionId":"c0bd29cd-b00b-40de-bfad-98b3209f40fa","walletId":"d0fc0d74-3c8d-49b6-bf3e-2e0396fc2fe7","providerId":"provider-a","status":"FAILED","failureCode":"INFRASTRUCTURE_PERMANENT","idempotentReplay":true}
+(pass) Persistent idempotency, inbox and out-of-order references > identifiable permanent failure is audited as FAILED and cannot overwrite a terminal result [8.04ms]
+{"timestamp":"2026-11-25T04:24:14.819Z","level":"info","event":"transaction.completed","correlationId":"24413bc4-35b4-4644-bf6a-e41f9b840de0","transactionId":"3dcde593-22c5-424b-a36c-f41e8111cad4","walletId":"1bcbfd6a-9aa2-4fff-a957-9ce48138f6d3","providerId":"provider-a","status":"PENDING_REFERENCE","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.822Z","level":"info","event":"transaction.completed","correlationId":"7eec91f8-3f34-4b70-9c9c-69a702a5588f","transactionId":"a0f15169-ae7b-4be5-8d3a-070025edac12","walletId":"1bcbfd6a-9aa2-4fff-a957-9ce48138f6d3","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+(pass) Persistent idempotency, inbox and out-of-order references > REFUND delivered before its optional/required BET reference is deferred then processed [15.44ms]
+{"timestamp":"2026-11-25T04:24:14.834Z","level":"info","event":"transaction.completed","correlationId":"99856897-fddc-4b5e-b5e7-2d48ffe5f0f8","transactionId":"e535d822-2701-4ee7-84ab-afa0b9dac225","walletId":"14db731b-7414-4e05-90c5-a2fd0afdb029","providerId":"provider-a","status":"PENDING_REFERENCE","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.838Z","level":"info","event":"transaction.completed","correlationId":"db5613b3-34bf-4519-8a33-9b32d282573e","transactionId":"da539e05-8fb6-4bcf-a2d7-2674324c8a97","walletId":"14db731b-7414-4e05-90c5-a2fd0afdb029","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+(pass) Persistent idempotency, inbox and out-of-order references > ROLLBACK delivered before its optional/required BET reference is deferred then processed [16.18ms]
+{"timestamp":"2026-11-25T04:24:14.851Z","level":"info","event":"transaction.completed","correlationId":"a1be7816-f235-4ff5-b791-7341c1e4dbfa","transactionId":"4340fd98-0bf2-4d04-9efc-664eb48fbc44","walletId":"0e0e894c-478e-462d-b5d3-9e7c5c31d500","providerId":"provider-a","status":"PENDING_REFERENCE","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.854Z","level":"info","event":"transaction.completed","correlationId":"316a754d-8318-4e9a-885f-67ca02fd081c","transactionId":"b12904b7-e943-4337-be68-2d4f0310dbd0","walletId":"0e0e894c-478e-462d-b5d3-9e7c5c31d500","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+(pass) Persistent idempotency, inbox and out-of-order references > WIN delivered before its optional/required BET reference is deferred then processed [21.90ms]
+{"timestamp":"2026-11-25T04:24:14.869Z","level":"info","event":"transaction.completed","correlationId":"e14c4cee-938d-4872-8ec3-6f47b38eb1bc","transactionId":"2e03e1e9-42eb-4f6c-9211-20553f8ae81a","walletId":"436bc6b8-ddaa-4eba-ab76-73a5c393ef99","providerId":"provider-a","status":"PENDING_REFERENCE","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:14.873Z","level":"info","event":"transaction.completed","correlationId":"208075ba-b21e-4e7f-9a4a-ea0d87dadacd","transactionId":"59326213-56e3-4079-94da-35573ff5c15f","walletId":"436bc6b8-ddaa-4eba-ab76-73a5c393ef99","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+(pass) Persistent idempotency, inbox and out-of-order references > LOSS delivered before its optional/required BET reference is deferred then processed [17.11ms]
+{"timestamp":"2026-11-25T04:24:14.887Z","level":"info","event":"transaction.completed","correlationId":"313a86b2-6a2c-4aa3-b501-e3a49ab37954","transactionId":"307b263d-91e5-4a2e-8401-afa9828ad5fc","walletId":"9a766307-edc9-4f55-a972-73495a8ae225","providerId":"provider-a","status":"PENDING_REFERENCE","idempotentReplay":false}
+(pass) Persistent idempotency, inbox and out-of-order references > pending worker respects due time, persists exponential retry and terminates exhausted reference [17.51ms]
+(pass) PostgreSQL invariants reject direct SQL corruption > balance changes without ledger, negative/NaN balances, and invalid version changes cannot commit [7.74ms]
+(pass) PostgreSQL invariants reject direct SQL corruption > positive wallet without its OPENING ledger is rejected at commit [4.52ms]
+{"timestamp":"2026-11-25T04:24:14.918Z","level":"info","event":"transaction.completed","correlationId":"dcd410b0-e7da-48e0-9e82-de9989b2526e","transactionId":"386b3f1d-63b4-4346-818d-610213ca56fc","walletId":"adc1b2a3-0831-4cc7-a992-23730a95ac0f","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+(pass) PostgreSQL invariants reject direct SQL corruption > ledger cannot be updated, deleted, truncated, forged or duplicated [8.88ms]
+{"timestamp":"2026-11-25T04:24:14.931Z","level":"info","event":"transaction.completed","correlationId":"a65afd1b-6ece-41a4-8e98-4fa8476f5b3d","transactionId":"9c7be9d7-7a5e-425f-8a76-e39c7ae1bd68","walletId":"bf19eb1d-43ae-4d7f-a6a5-fe6607907384","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+(pass) PostgreSQL invariants reject direct SQL corruption > terminal transactions and outbox business payloads are immutable [11.97ms]
+{"timestamp":"2026-11-25T04:24:14.939Z","level":"info","event":"transaction.completed","correlationId":"918bf95d-05f4-4893-a1d7-f1ae83cae407","transactionId":"3276a53a-4cbb-4aae-b1dc-685101036c52","walletId":"4b48f3c0-5ff7-4fab-8771-e05d51810061","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+(pass) PostgreSQL invariants reject direct SQL corruption > processed transactions require ledger and outbox, and OPENING is unique per wallet [12.30ms]
+{"timestamp":"2026-11-25T04:24:14.967Z","level":"info","event":"transaction.completed","correlationId":"dd39390f-b60a-4b60-8a45-546d87496500","transactionId":"6c8a95ff-9f0f-4327-8e7b-c8a93c6434fb","walletId":"5fc43ac7-97b8-4504-bd2f-f7d7b254bddd","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+(pass) PostgreSQL invariants reject direct SQL corruption > runtime database role can process finances but cannot alter, delete or truncate ledger/schema [30.69ms]
+{"timestamp":"2026-11-25T04:24:14.996Z","level":"info","event":"transaction.completed","correlationId":"financial-http-test","transactionId":"83d96da1-55dd-416b-a4c1-3104beb94225","walletId":"afca0fdc-525b-45cd-8027-5c94c8f9ac1b","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+(pass) Real HTTP API and consistent query snapshots > create/read/reconcile/transaction lookup/health expose their documented contracts [34.82ms]
+{"timestamp":"2026-11-25T04:24:15.014Z","level":"warn","event":"http.request_failed","correlationId":"financial-http-test","code":"INVALID_PAYLOAD","sqlState":"INVALID_PAYLOAD"}
+{"timestamp":"2026-11-25T04:24:15.014Z","level":"warn","event":"http.request_failed","correlationId":"financial-http-test","code":"INVALID_PAYLOAD","sqlState":"INVALID_PAYLOAD"}
+{"timestamp":"2026-11-25T04:24:15.015Z","level":"warn","event":"http.request_failed","correlationId":"financial-http-test","code":"INVALID_PAYLOAD","sqlState":"INVALID_PAYLOAD"}
+{"timestamp":"2026-11-25T04:24:15.015Z","level":"warn","event":"http.request_failed","correlationId":"financial-http-test","code":"INVALID_PAYLOAD","sqlState":"INVALID_PAYLOAD"}
+{"timestamp":"2026-11-25T04:24:15.016Z","level":"warn","event":"http.request_failed","correlationId":"f5fa8ad5-8ab7-4d05-8d79-2001e25c10cb","code":"INVALID_REQUEST"}
+{"timestamp":"2026-11-25T04:24:15.020Z","level":"info","event":"transaction.completed","correlationId":"financial-http-test","transactionId":"440180dc-f386-4464-a12e-cc29ff8cca69","walletId":"87b3d4d6-dae4-42f7-943c-48be5316ada2","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:15.021Z","level":"warn","event":"http.request_failed","correlationId":"financial-http-test","code":"IDEMPOTENCY_CONFLICT","sqlState":"IDEMPOTENCY_CONFLICT"}
+{"timestamp":"2026-11-25T04:24:15.028Z","level":"info","event":"transaction.completed","correlationId":"financial-http-test","transactionId":"f719fe8c-3f73-4a4c-875b-3ada284128bb","walletId":"87b3d4d6-dae4-42f7-943c-48be5316ada2","providerId":"provider-a","status":"REJECTED","failureCode":"INSUFFICIENT_FUNDS","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:15.031Z","level":"info","event":"transaction.completed","correlationId":"financial-http-test","transactionId":"f57375e9-8dd7-4343-9ea9-a4d8d815937a","walletId":"87b3d4d6-dae4-42f7-943c-48be5316ada2","providerId":"provider-a","status":"PENDING_REFERENCE","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:15.031Z","level":"warn","event":"http.request_failed","correlationId":"f8229d21-dcd2-4af9-bf82-d42b65eca13e","code":"WALLET_NOT_FOUND","sqlState":"WALLET_NOT_FOUND"}
+{"timestamp":"2026-11-25T04:24:15.032Z","level":"warn","event":"http.request_failed","correlationId":"f0bec468-422b-4629-8e94-08521af51731","code":"TRANSACTION_NOT_FOUND","sqlState":"TRANSACTION_NOT_FOUND"}
+{"timestamp":"2026-11-25T04:24:15.032Z","level":"warn","event":"http.request_failed","correlationId":"509ac5e0-c5f8-4937-891e-56a7e4e5fbdc","code":"INVALID_ID","sqlState":"INVALID_ID"}
+{"timestamp":"2026-11-25T04:24:15.033Z","level":"warn","event":"http.request_failed","correlationId":"ef74b3f3-d790-47e6-beaf-6d6ca1f2b156","code":"INVALID_LIMIT","sqlState":"INVALID_LIMIT"}
+(pass) Real HTTP API and consistent query snapshots > 400 invalid, 409 conflict, 422 business rejection, 202 pending and 404 missing are distinct [23.18ms]
+{"timestamp":"2026-11-25T04:24:15.036Z","level":"warn","event":"http.request_failed","correlationId":"e9682aa3-3755-46c2-aeda-5f0a80d982b7","code":"INVALID_REQUEST"}
+{"timestamp":"2026-11-25T04:24:15.041Z","level":"warn","event":"http.request_failed","correlationId":"a2de87e5-45f3-4b40-95e2-9d9ac937c069","code":"PAYLOAD_TOO_LARGE"}
+(pass) Real HTTP API and consistent query snapshots > malformed JSON is INVALID_REQUEST and oversized JSON is PAYLOAD_TOO_LARGE, without side effects [8.47ms]
+{"timestamp":"2026-11-25T04:24:15.045Z","level":"warn","event":"http.request_failed","correlationId":"167b6506-d707-451b-91c7-1b2514e40611","code":"INVALID_REQUEST"}
+{"timestamp":"2026-11-25T04:24:15.045Z","level":"warn","event":"http.request_failed","correlationId":"5992726b-3a74-431c-b739-ec6ca5535912","code":"INVALID_REQUEST"}
+{"timestamp":"2026-11-25T04:24:15.046Z","level":"warn","event":"http.request_failed","correlationId":"69493cee-4a80-4c2d-b3fa-0732c5c19f67","code":"INVALID_PAYLOAD","sqlState":"INVALID_PAYLOAD"}
+{"timestamp":"2026-11-25T04:24:15.046Z","level":"warn","event":"http.request_failed","correlationId":"0fe613eb-31bc-4417-9d7e-7de325f25550","code":"INVALID_PAYLOAD","sqlState":"INVALID_PAYLOAD"}
+{"timestamp":"2026-11-25T04:24:15.046Z","level":"warn","event":"http.request_failed","correlationId":"40b0359c-681f-4694-91e9-edafa561c32a","code":"INVALID_PAYLOAD","sqlState":"INVALID_PAYLOAD"}
+(pass) Real HTTP API and consistent query snapshots > null, primitive, array, missing and unsupported content-type bodies cannot reach financial processing [4.94ms]
+{"timestamp":"2026-11-25T04:24:21.110Z","level":"error","event":"http.request_failed","correlationId":"financial-http-test","code":"INFRASTRUCTURE_UNAVAILABLE","sqlState":"INFRASTRUCTURE_UNAVAILABLE"}
+{"timestamp":"2026-11-25T04:24:21.118Z","level":"info","event":"transaction.completed","correlationId":"financial-http-test","transactionId":"08320481-b81a-4cd0-8443-1667e921e60a","walletId":"36e0c4a1-9184-4b74-8f01-51901c7f7508","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+(pass) Real HTTP API and consistent query snapshots > real lock timeout yields retryable HTTP 503; same key succeeds after releasing the lock [6071.91ms]
+{"timestamp":"2026-11-25T04:24:21.126Z","level":"info","event":"transaction.completed","correlationId":"28bab396-4749-4c09-a608-28bdf4983741","transactionId":"85bed59c-935f-473d-9846-c972a99a5c05","walletId":"365526b9-ef8d-4a9a-b9c9-8a129c111f3c","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:21.133Z","level":"info","event":"transaction.completed","correlationId":"a950a937-ab23-477d-86a3-aa426baa526b","transactionId":"ca2e0260-04a7-4a38-b27b-0c33af4e34dc","walletId":"365526b9-ef8d-4a9a-b9c9-8a129c111f3c","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:21.136Z","level":"info","event":"transaction.completed","correlationId":"2a081ee7-2961-4242-94c6-fd141ebdd442","transactionId":"d5486909-8268-412c-bd93-c882fae31479","walletId":"365526b9-ef8d-4a9a-b9c9-8a129c111f3c","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:21.141Z","level":"info","event":"transaction.completed","correlationId":"fb72bd89-a841-412a-b213-2779ceb91a07","transactionId":"6531e5c4-458d-42a1-ac85-7d5b81e90c65","walletId":"365526b9-ef8d-4a9a-b9c9-8a129c111f3c","providerId":"provider-a","status":"PROCESSED","idempotentReplay":false}
+{"timestamp":"2026-11-25T04:24:21.146Z","level":"warn","event":"http.request_failed","correlationId":"01c605d7-7846-4a69-befd-7da1eee61679","code":"INVALID_CURSOR","sqlState":"INVALID_CURSOR"}
+{"timestamp":"2026-11-25T04:24:21.147Z","level":"warn","event":"http.request_failed","correlationId":"e20e1a23-0cfd-419b-bfbd-228faa369257","code":"INVALID_CURSOR","sqlState":"INVALID_CURSOR"}
+{"timestamp":"2026-11-25T04:24:21.147Z","level":"warn","event":"http.request_failed","correlationId":"d3730d40-0842-425f-84ed-6dc917ed5ca5","code":"INVALID_LIMIT","sqlState":"INVALID_LIMIT"}
+{"timestamp":"2026-11-25T04:24:21.147Z","level":"warn","event":"http.request_failed","correlationId":"0d762149-513e-47ca-970b-8e813ad72db5","code":"INVALID_QUERY","sqlState":"INVALID_QUERY"}
+(pass) Real HTTP API and consistent query snapshots > ledger cursor freezes a high watermark while concurrent inserts occur; tampering and cross-wallet reuse fail [28.97ms]
+
+ 44 pass
+ 0 fail
+ 331 expect() calls
+Ran 44 tests across 3 files. [8.67s]
+$ bun test --timeout 120000 test/concurrency
+bun test v1.3.3 (274e01c7)
+
+test/concurrency/processes.test.ts:
+(pass) real PostgreSQL/SQS with independent Bun application processes > runs 3 separate APIs, deduplicates 50 simultaneous requests, and allows exactly one competing BET 80.00 [924.08ms]
+(pass) real PostgreSQL/SQS with independent Bun application processes > lets another wallet progress while a real row lock blocks the first wallet [715.43ms]
+(pass) real PostgreSQL/SQS with independent Bun application processes > rolls everything back when a process is killed before COMMIT, then applies the same command after restart [1101.61ms]
+(pass) real PostgreSQL/SQS with independent Bun application processes > resolves both REFUND and ROLLBACK delivered before their references after a complete application restart [1690.56ms]
+(pass) real PostgreSQL/SQS with independent Bun application processes > runs two publisher processes concurrently and delivers every committed event with its original eventId [2388.65ms]
+
+ 5 pass
+ 0 fail
+ 66 expect() calls
+Ran 5 tests across 1 file. [7.16s]
+$ bun build src/main.ts --outdir dist --target bun --packages external
+Bundled 31 modules in 3ms
+
+  main.js  121.31 KB  (entry point)
+
+[migrator] Processing 'Migration202611250001'
+[migrator] Applied 'Migration202611250001'
+[migrator] Processing 'Migration202611250002'
+[migrator] Applied 'Migration202611250002'
+{
+  "walletId": "ac755152-bcca-4c3f-9f5b-b5373632d2e9",
+  "simultaneousBets": [
+    {
+      "status": 200,
+      "data": {
+        "transactionId": "5f230081-0d33-470a-a528-e55256afb592",
+        "status": "PROCESSED",
+        "balance": {
+          "amount": "20.00",
+          "currency": "BRL"
+        },
+        "idempotentReplay": false
+      }
+    },
+    {
+      "status": 422,
+      "data": {
+        "transactionId": "66644b8c-f168-4c67-89b5-4b98519942df",
+        "status": "REJECTED",
+        "balance": {
+          "amount": "20.00",
+          "currency": "BRL"
+        },
+        "failureCode": "INSUFFICIENT_FUNDS",
+        "idempotentReplay": false
+      }
+    }
+  ],
+  "replays": [
+    {
+      "status": 200,
+      "data": {
+        "transactionId": "5f230081-0d33-470a-a528-e55256afb592",
+        "status": "PROCESSED",
+        "balance": {
+          "amount": "20.00",
+          "currency": "BRL"
+        },
+        "idempotentReplay": true
+      }
+    },
+    {
+      "status": 422,
+      "data": {
+        "transactionId": "66644b8c-f168-4c67-89b5-4b98519942df",
+        "status": "REJECTED",
+        "balance": {
+          "amount": "20.00",
+          "currency": "BRL"
+        },
+        "failureCode": "INSUFFICIENT_FUNDS",
+        "idempotentReplay": true
+      }
+    }
+  ],
+  "reconciliation": {
+    "walletId": "ac755152-bcca-4c3f-9f5b-b5373632d2e9",
+    "storedBalance": {
+      "amount": "20.00",
+      "currency": "BRL"
+    },
+    "calculatedBalance": {
+      "amount": "20.00",
+      "currency": "BRL"
+    },
+    "difference": {
+      "amount": "0.00",
+      "currency": "BRL"
+    },
+    "consistent": true,
+    "checkedEntries": 2
+  }
+}
+{
+  "runId": "158ac8aa-312c-4027-b6c5-518df80cf0d1",
+  "occurredAt": "2026-11-25T04:24:31.166Z",
+  "environment": {
+    "bun": "1.3.3",
+    "platform": "linux",
+    "arch": "x64",
+    "availableParallelism": 9,
+    "applicationInstances": 3,
+    "note": "PostgreSQL 17.12 and LocalStack Core 4.14.0 native services; three Bun processes; application database role jungle_app; publisher polling 250ms; executor resource limits not calibrated"
+  },
+  "methodology": {
+    "requests": 1000,
+    "concurrency": 25,
+    "wallets": 20,
+    "duplicateRule": "every fifth request replays the preceding identity",
+    "warmup": "wallet creation and metrics fetch excluded",
+    "measurement": "HTTP submission only; reconciliation after the measured interval",
+    "money": "1.00 BRL per unique BET, 1000000.00 BRL initial balance per wallet"
+  },
+  "results": {
+    "durationMs": 1433.714684,
+    "requestsPerSecond": 697.4888456956056,
+    "uniqueProcessed": 800,
+    "replays": 200,
+    "failures": 0,
+    "errorRate": 0,
+    "httpStatuses": {
+      "200": 1000
+    },
+    "latencyMs": {
+      "p50": 26.646246999999903,
+      "p95": 95.78739299999995,
+      "p99": 131.71156800000006
+    },
+    "lockConflicts": 0,
+    "retries": 0,
+    "peakObservedOutboxLagSeconds": 1.24742,
+    "outboxPendingAtMeasurementEnd": 1492,
+    "reconciledWallets": 20,
+    "allWalletsConsistent": true
+  },
+  "limitations": [
+    "Short local measurement; not a production capacity estimate.",
+    "Outbox publication is asynchronous; HTTP throughput is not event-consumer throughput.",
+    "A single run provides no statistical confidence interval."
+  ]
+}
+{"event":"delivery_validation_complete","applicationProcesses":[545,547,548],"allOutboxEventsPublished":true}

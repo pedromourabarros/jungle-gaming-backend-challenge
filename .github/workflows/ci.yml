@@ -1,0 +1,18 @@
+name: Financial correctness
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and run unit, PostgreSQL/SQS integration and process concurrency tests
+        run: docker compose --profile test run --build --rm tests
+      - name: Dependency logs
+        if: failure()
+        run: docker compose logs --no-color postgres localstack
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v --remove-orphans

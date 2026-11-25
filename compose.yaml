@@ -1,0 +1,118 @@
+name: jungle-gaming
+
+x-application-environment: &application-environment
+  DATABASE_URL: postgresql://jungle_app:jungle_app@postgres:5432/jungle
+  SQS_ENDPOINT: http://localstack:4566
+  AWS_REGION: us-east-1
+  AWS_ACCESS_KEY_ID: test
+  AWS_SECRET_ACCESS_KEY: test
+  PORT: 3000
+  CURSOR_SECRET: ${CURSOR_SECRET:-development-only-change-this-shared-cursor-secret}
+  NODE_ENV: production
+
+x-application: &application
+  build:
+    context: .
+    target: runtime
+  environment: *application-environment
+  depends_on:
+    migrate:
+      condition: service_completed_successfully
+    localstack:
+      condition: service_healthy
+  restart: unless-stopped
+  stop_grace_period: 35s
+  healthcheck:
+    test: ["CMD", "bun", "-e", "const r = await fetch('http://localhost:3000/health/ready'); process.exit(r.ok ? 0 : 1)"]
+    interval: 10s
+    timeout: 20s
+    retries: 5
+    start_period: 10s
+
+services:
+  postgres:
+    image: postgres:17.12-alpine
+    environment:
+      POSTGRES_USER: jungle_owner
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: jungle
+    ports: ["127.0.0.1:5432:5432"]
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/postgres-init.sql:/docker-entrypoint-initdb.d/10-jungle.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U jungle_owner -d jungle"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  localstack:
+    image: localstack/localstack:4.14.0
+    environment:
+      SERVICES: sqs
+      AWS_DEFAULT_REGION: us-east-1
+      SQS_ENDPOINT_STRATEGY: "off"
+      EAGER_SERVICE_LOADING: "1"
+    ports: ["127.0.0.1:4566:4566"]
+    volumes:
+      - ./infra/localstack-init.sh:/etc/localstack/init/ready.d/10-queues.sh:ro
+      - ./infra/localstack-init.py:/opt/jungle/init-queues.py:ro
+    healthcheck:
+      test: ["CMD-SHELL", "awslocal sqs get-queue-url --queue-name wager-transactions.fifo >/dev/null 2>&1"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+      start_period: 10s
+
+  migrate:
+    build:
+      context: .
+      target: runtime
+    command: ["bun", "scripts/migrate.ts", "up"]
+    environment:
+      <<: *application-environment
+      DATABASE_URL: postgresql://jungle_owner:devpassword@postgres:5432/jungle
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    <<: *application
+    ports: ["127.0.0.1:3000:3000"]
+
+  api-2:
+    <<: *application
+    profiles: ["cluster"]
+    ports: ["127.0.0.1:3001:3000"]
+
+  api-3:
+    <<: *application
+    profiles: ["cluster"]
+    ports: ["127.0.0.1:3002:3000"]
+
+  tests:
+    profiles: ["test"]
+    build:
+      context: .
+      target: development
+    command: ["bun", "run", "test"]
+    environment:
+      NODE_ENV: test
+      ALLOW_INTEGRATION_TESTS: "1"
+      DATABASE_URL: postgresql://jungle_owner:devpassword@postgres:5432/jungle_test
+      TEST_DATABASE_URL: postgresql://jungle_owner:devpassword@postgres:5432/jungle_test
+      APP_DATABASE_URL: postgresql://jungle_app:jungle_app@postgres:5432/jungle_test
+      MIGRATION_DATABASE_URL: postgresql://jungle_owner:devpassword@postgres:5432/jungle_migration_test
+      SQS_ENDPOINT: http://localstack:4566
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+
+volumes:
+  postgres-data:

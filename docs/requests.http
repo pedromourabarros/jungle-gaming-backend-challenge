@@ -1,0 +1,328 @@
+# Exemplos para a extensão REST Client do VS Code.
+# Envie cada requisição manualmente, na ordem desejada. Este arquivo não executa nada sozinho.
+# Execute createWallet uma vez antes das requisições com {{walletId}} e {{playerId}}.
+# A criação usa um UUID novo; as demais identidades derivam da wallet criada.
+# Reiniciar createWallet abre outra wallet e muda as variáveis derivadas.
+# Auth está desativada no desafio: não existe header Authorization obrigatório.
+
+@baseUrl = http://localhost:3000
+@providerId = rest-client-demo
+@walletId = {{createWallet.response.body.$.id}}
+@playerId = {{createWallet.response.body.$.playerId}}
+@roundId = round-{{walletId}}
+@betExternalId = bet-{{walletId}}
+@winExternalId = win-{{walletId}}
+@refundExternalId = refund-{{walletId}}
+@rollbackExternalId = rollback-{{walletId}}
+@lateBetExternalId = late-bet-{{walletId}}
+@lateRefundExternalId = late-refund-{{walletId}}
+
+### Liveness — 200, não depende de PostgreSQL ou SQS
+GET {{baseUrl}}/health/live
+X-Correlation-Id: rest-client-live
+
+### Readiness — 200 quando banco e filas estão disponíveis; 503 caso contrário
+GET {{baseUrl}}/health/ready
+X-Correlation-Id: rest-client-ready
+
+### Criar wallet — 201, saldo 1000.00 BRL, versão 1 e abertura no ledger
+# @name createWallet
+POST {{baseUrl}}/wallets
+Content-Type: application/json
+X-Correlation-Id: rest-client-create
+
+{
+  "playerId": "{{$guid}}",
+  "initialBalance": { "amount": "1000.00", "currency": "BRL" }
+}
+
+### Consultar saldo atual — 200
+GET {{baseUrl}}/wallets/{{walletId}}
+X-Correlation-Id: rest-client-wallet
+
+### BET — 200, saldo 975.00, versão 2
+# @name bet
+POST {{baseUrl}}/wagering/transactions
+Content-Type: application/json
+Idempotency-Key: {{providerId}}:{{betExternalId}}
+X-Correlation-Id: rest-client-bet-original
+
+{
+  "providerId": "{{providerId}}",
+  "externalTransactionId": "{{betExternalId}}",
+  "playerId": "{{playerId}}",
+  "walletId": "{{walletId}}",
+  "roundId": "{{roundId}}",
+  "gameId": "fortune-chimp",
+  "kind": "BET",
+  "money": { "amount": "25.00", "currency": "BRL" }
+}
+
+### Replay da BET — 200, idempotentReplay=true e saldo original 975.00
+# Pode repetir também depois dos créditos abaixo: o saldo da resposta continua 975.00.
+# X-Correlation-Id diferente não muda a identidade financeira.
+POST {{baseUrl}}/wagering/transactions
+Content-Type: application/json
+Idempotency-Key: {{providerId}}:{{betExternalId}}
+X-Correlation-Id: rest-client-bet-replay
+
+{
+  "providerId": "{{providerId}}",
+  "externalTransactionId": "{{betExternalId}}",
+  "playerId": "{{playerId}}",
+  "walletId": "{{walletId}}",
+  "roundId": "{{roundId}}",
+  "gameId": "fortune-chimp",
+  "kind": "BET",
+  "money": { "amount": "25.00", "currency": "BRL" }
+}
+
+### WIN — 200, crédito de 50.00; saldo 1025.00, versão 3
+# @name win
+POST {{baseUrl}}/wagering/transactions
+Content-Type: application/json
+Idempotency-Key: {{providerId}}:{{winExternalId}}
+X-Correlation-Id: rest-client-win
+
+{
+  "providerId": "{{providerId}}",
+  "externalTransactionId": "{{winExternalId}}",
+  "playerId": "{{playerId}}",
+  "walletId": "{{walletId}}",
+  "roundId": "{{roundId}}",
+  "gameId": "fortune-chimp",
+  "kind": "WIN",
+  "money": { "amount": "50.00", "currency": "BRL" },
+  "referenceExternalTransactionId": "{{betExternalId}}"
+}
+
+### LOSS — 200, nenhum lançamento, saldo e versão mantidos
+# O amount é informativo: qualquer decimal canônico não negativo é aceito.
+POST {{baseUrl}}/wagering/transactions
+Content-Type: application/json
+Idempotency-Key: {{providerId}}:loss-{{walletId}}
+X-Correlation-Id: rest-client-loss
+
+{
+  "providerId": "{{providerId}}",
+  "externalTransactionId": "loss-{{walletId}}",
+  "playerId": "{{playerId}}",
+  "walletId": "{{walletId}}",
+  "roundId": "{{roundId}}",
+  "gameId": "fortune-chimp",
+  "kind": "LOSS",
+  "money": { "amount": "0.00", "currency": "BRL" },
+  "referenceExternalTransactionId": "{{betExternalId}}"
+}
+
+### REFUND integral da BET — 200, crédito 25.00; saldo 1050.00, versão 4
+POST {{baseUrl}}/wagering/transactions
+Content-Type: application/json
+Idempotency-Key: {{providerId}}:{{refundExternalId}}
+X-Correlation-Id: rest-client-refund
+
+{
+  "providerId": "{{providerId}}",
+  "externalTransactionId": "{{refundExternalId}}",
+  "playerId": "{{playerId}}",
+  "walletId": "{{walletId}}",
+  "roundId": "{{roundId}}",
+  "gameId": "fortune-chimp",
+  "kind": "REFUND",
+  "money": { "amount": "25.00", "currency": "BRL" },
+  "referenceExternalTransactionId": "{{betExternalId}}"
+}
+
+### ROLLBACK integral do WIN — 200, débito 50.00; saldo 1000.00, versão 5
+POST {{baseUrl}}/wagering/transactions
+Content-Type: application/json
+Idempotency-Key: {{providerId}}:{{rollbackExternalId}}
+X-Correlation-Id: rest-client-rollback
+
+{
+  "providerId": "{{providerId}}",
+  "externalTransactionId": "{{rollbackExternalId}}",
+  "playerId": "{{playerId}}",
+  "walletId": "{{walletId}}",
+  "roundId": "{{roundId}}",
+  "gameId": "fortune-chimp",
+  "kind": "ROLLBACK",
+  "money": { "amount": "50.00", "currency": "BRL" },
+  "referenceExternalTransactionId": "{{winExternalId}}"
+}
+
+### Consultar transação pelo ID interno — 200
+GET {{baseUrl}}/wagering/transactions/{{bet.response.body.$.transactionId}}
+X-Correlation-Id: rest-client-query-internal
+
+### Consultar transação por provedor e ID externo — 200
+GET {{baseUrl}}/providers/{{providerId}}/wagering/transactions/{{betExternalId}}
+X-Correlation-Id: rest-client-query-external
+
+### Primeira página do ledger — ordem crescente, limite superior fixado nesta leitura
+# @name ledgerPageOne
+GET {{baseUrl}}/wallets/{{walletId}}/ledger?limit=2
+X-Correlation-Id: rest-client-ledger-first
+
+### Próxima página — envie somente quando nextCursor da primeira página não for null
+# Não altere o cursor. Ele também impede usar a página de outra wallet.
+# @name ledgerPageTwo
+GET {{baseUrl}}/wallets/{{walletId}}/ledger?limit=2&cursor={{ledgerPageOne.response.body.$.nextCursor}}
+X-Correlation-Id: rest-client-ledger-next
+
+### Reconciliação — 200; após o fluxo acima: saldo 1000.00, diferença 0.00, 5 entradas
+# Divergências retornam consistent=false e não são corrigidas por este endpoint.
+POST {{baseUrl}}/wallets/{{walletId}}/reconciliation
+X-Correlation-Id: rest-client-reconciliation
+
+### Fora de ordem: REFUND antes da BET — 202 PENDING_REFERENCE
+# @name pendingRefund
+POST {{baseUrl}}/wagering/transactions
+Content-Type: application/json
+Idempotency-Key: {{providerId}}:{{lateRefundExternalId}}
+X-Correlation-Id: rest-client-pending-refund
+
+{
+  "providerId": "{{providerId}}",
+  "externalTransactionId": "{{lateRefundExternalId}}",
+  "playerId": "{{playerId}}",
+  "walletId": "{{walletId}}",
+  "roundId": "late-round-{{walletId}}",
+  "gameId": "fortune-chimp",
+  "kind": "REFUND",
+  "money": { "amount": "40.00", "currency": "BRL" },
+  "referenceExternalTransactionId": "{{lateBetExternalId}}"
+}
+
+### A BET referenciada chega — 200; o worker aplicará o REFUND no próximo retry devido
+POST {{baseUrl}}/wagering/transactions
+Content-Type: application/json
+Idempotency-Key: {{providerId}}:{{lateBetExternalId}}
+X-Correlation-Id: rest-client-late-bet
+
+{
+  "providerId": "{{providerId}}",
+  "externalTransactionId": "{{lateBetExternalId}}",
+  "playerId": "{{playerId}}",
+  "walletId": "{{walletId}}",
+  "roundId": "late-round-{{walletId}}",
+  "gameId": "fortune-chimp",
+  "kind": "BET",
+  "money": { "amount": "40.00", "currency": "BRL" }
+}
+
+### Consultar a pendência — 200; repita até PROCESSED com workers habilitados
+GET {{baseUrl}}/wagering/transactions/{{pendingRefund.response.body.$.transactionId}}
+X-Correlation-Id: rest-client-pending-status
+
+### Métricas Prometheus — 200 text/plain
+GET {{baseUrl}}/metrics
+Accept: text/plain
+X-Correlation-Id: rest-client-metrics
+
+### Erro intencional: wallet duplicada — 409 WALLET_ALREADY_EXISTS
+POST {{baseUrl}}/wallets
+Content-Type: application/json
+X-Correlation-Id: rest-client-duplicate-wallet
+
+{
+  "playerId": "{{playerId}}",
+  "initialBalance": { "amount": "1000.00", "currency": "BRL" }
+}
+
+### Erro intencional: mesma chave e payload divergente — 409 IDEMPOTENCY_CONFLICT
+POST {{baseUrl}}/wagering/transactions
+Content-Type: application/json
+Idempotency-Key: {{providerId}}:{{betExternalId}}
+X-Correlation-Id: rest-client-idempotency-conflict
+
+{
+  "providerId": "{{providerId}}",
+  "externalTransactionId": "{{betExternalId}}",
+  "playerId": "{{playerId}}",
+  "walletId": "{{walletId}}",
+  "roundId": "{{roundId}}",
+  "gameId": "fortune-chimp",
+  "kind": "BET",
+  "money": { "amount": "26.00", "currency": "BRL" }
+}
+
+### Rejeição auditável: BET sem saldo — 422, failureCode INSUFFICIENT_FUNDS
+# Repetir mantém a rejeição e seu saldo observado; não cria novo débito.
+POST {{baseUrl}}/wagering/transactions
+Content-Type: application/json
+Idempotency-Key: {{providerId}}:insufficient-{{walletId}}
+X-Correlation-Id: rest-client-insufficient
+
+{
+  "providerId": "{{providerId}}",
+  "externalTransactionId": "insufficient-{{walletId}}",
+  "playerId": "{{playerId}}",
+  "walletId": "{{walletId}}",
+  "roundId": "{{roundId}}",
+  "gameId": "fortune-chimp",
+  "kind": "BET",
+  "money": { "amount": "999999.00", "currency": "BRL" }
+}
+
+### Rejeição auditável: moeda diferente da wallet — 422 CURRENCY_MISMATCH
+POST {{baseUrl}}/wagering/transactions
+Content-Type: application/json
+Idempotency-Key: {{providerId}}:currency-{{walletId}}
+X-Correlation-Id: rest-client-currency-conflict
+
+{
+  "providerId": "{{providerId}}",
+  "externalTransactionId": "currency-{{walletId}}",
+  "playerId": "{{playerId}}",
+  "walletId": "{{walletId}}",
+  "roundId": "{{roundId}}",
+  "gameId": "fortune-chimp",
+  "kind": "BET",
+  "money": { "amount": "10.00", "currency": "EUR" }
+}
+
+### Erro intencional: Idempotency-Key ausente — 400 INVALID_PAYLOAD
+POST {{baseUrl}}/wagering/transactions
+Content-Type: application/json
+X-Correlation-Id: rest-client-missing-key
+
+{
+  "providerId": "{{providerId}}",
+  "externalTransactionId": "missing-key-{{walletId}}",
+  "playerId": "{{playerId}}",
+  "walletId": "{{walletId}}",
+  "roundId": "{{roundId}}",
+  "gameId": "fortune-chimp",
+  "kind": "BET",
+  "money": { "amount": "10.00", "currency": "BRL" }
+}
+
+### Erro intencional: formato monetário sem duas casas — 400
+POST {{baseUrl}}/wagering/transactions
+Content-Type: application/json
+Idempotency-Key: {{providerId}}:invalid-money-{{walletId}}
+X-Correlation-Id: rest-client-invalid-money
+
+{
+  "providerId": "{{providerId}}",
+  "externalTransactionId": "invalid-money-{{walletId}}",
+  "playerId": "{{playerId}}",
+  "walletId": "{{walletId}}",
+  "roundId": "{{roundId}}",
+  "gameId": "fortune-chimp",
+  "kind": "BET",
+  "money": { "amount": "10.0", "currency": "BRL" }
+}
+
+### Erro intencional: UUID válido mas transação inexistente — 404 TRANSACTION_NOT_FOUND
+GET {{baseUrl}}/wagering/transactions/{{$guid}}
+X-Correlation-Id: rest-client-not-found
+
+# Outras respostas documentadas em openapi.yaml:
+# 413: corpo acima do limite do parser HTTP.
+# 500: resultado terminal FAILED persistido (failureCode + idempotentReplay),
+#      ou envelope ApiError para falha interna inesperada.
+# 503: dependência temporariamente indisponível; erros transitórios da API têm
+#      retryable=true e Retry-After: 1. Readiness usa seu próprio envelope checks.
+# Não existem endpoints HTTP para injetar falhas, matar workers ou forçar estados.
